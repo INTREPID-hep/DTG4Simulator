@@ -44,7 +44,6 @@
 int main(int argc,char** argv)
 {
   // Detect interactive mode (if no arguments) and define UI session
-  //
   G4UIExecutive* ui = nullptr;
   if ( argc == 1 ) { ui = new G4UIExecutive(argc, argv); }
 
@@ -56,15 +55,16 @@ int main(int argc,char** argv)
   //
   auto runManager =
     G4RunManagerFactory::CreateRunManager(G4RunManagerType::Default);
-
   runManager->SetNumberOfThreads(4);
   
-  // Mandatory user initialization classes
-  runManager->SetUserInitialization(new DTSim::DetectorConstruction);
-
+  // ------------- Mandatory user initialization classes ---------------
+  // Physics list
   auto physicsList = new FTFP_BERT;
   physicsList->RegisterPhysics(new G4StepLimiterPhysics());
   runManager->SetUserInitialization(physicsList);
+
+  // Detector construction
+  runManager->SetUserInitialization(new DTSim::DetectorConstruction);
 
   // User action initialization
   runManager->SetUserInitialization(new DTSim::ActionInitialization());

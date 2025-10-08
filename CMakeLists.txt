@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------------
 # Setup the project
-cmake_minimum_required(VERSION 3.16...3.27)
+cmake_minimum_required(VERSION 3.16...3.28)
 project(DTSim)
 
 #----------------------------------------------------------------------------
@@ -30,38 +30,18 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
 file(GLOB sources ${PROJECT_SOURCE_DIR}/src/*.cc)
 file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
 
+file(GLOB MACRO_FILES "macros/*.mac")
+#----------------------------------------------------------------------------
+# Copy all scripts to the build directory, i.e. the directory in which we
+# build DTSim. This is so that we can run the executable directly because it
+# relies on these scripts being in the current working directory.
+file(COPY ${MACRO_FILES} DESTINATION ${CMAKE_BINARY_DIR}/)
+
 #----------------------------------------------------------------------------
 # Add the executable, and link it to the Geant4 libraries
 #
 add_executable(exampleDTSim exampleDTSim.cc ${sources} ${headers})
 target_link_libraries(exampleDTSim ${Geant4_LIBRARIES})
-
-#----------------------------------------------------------------------------
-# Copy all scripts to the build directory, i.e. the directory in which we
-# build DTSim. This is so that we can run the executable directly because it
-# relies on these scripts being in the current working directory.
-#
-set(DTSim_SCRIPTS
-  exampleDTSim.in
-  exampleDTSim.out
-  icons.mac
-  gui.mac
-  init_vis.mac
-  run1.mac
-  run2.mac
-  runShowers.mac
-  vis.mac
-  plotter.mac
-  tsg_offscreen.mac
-  )
-
-foreach(_script ${DTSim_SCRIPTS})
-  configure_file(
-    ${PROJECT_SOURCE_DIR}/${_script}
-    ${PROJECT_BINARY_DIR}/${_script}
-    COPYONLY
-    )
-endforeach()
 
 #----------------------------------------------------------------------------
 # Add program to the project targets
@@ -72,5 +52,5 @@ add_custom_target(DTSim DEPENDS exampleDTSim)
 #----------------------------------------------------------------------------
 # Install the executable to 'bin' directory under CMAKE_INSTALL_PREFIX
 #
-install(TARGETS exampleDTSim DESTINATION bin)
+# install(TARGETS exampleDTSim DESTINATION bin)
 

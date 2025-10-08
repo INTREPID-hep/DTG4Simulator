@@ -1,0 +1,92 @@
+# Git ignore for DTG4Simulator — C++/CMake project using Geant4
+# Keep source files (including macros/) tracked. Ignore common build artifacts,
+# IDE files, OS cruft and typical Geant4 runtime outputs.
+
+# -----------------------------
+# Build / CMake
+# -----------------------------
+/build/
+/bin/
+/lib/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+Makefile
+link.txt
+compile_commands.json
+
+# Object files, libraries and executables
+*.o
+*.obj
+*.lo
+*.la
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+
+# Auto-generated compilation databases and flags
+.moc
+
+# -----------------------------
+# Geant4 / runtime outputs
+# -----------------------------
+# Root histograms and data files produced at runtime
+*.root
+
+# Geant4 generated macro/log files that may be placed in build/
+/build/*.macro
+/build/*.mac
+/build/*.log
+/build/*.root
+
+# G4 history / GUI session files sometimes generated in build
+G4History.macro
+
+# -----------------------------
+# IDEs / Editors
+# -----------------------------
+.vscode/
+.idea/
+*.code-workspace
+*.iml
+
+# Editor swap / backup files
+*~
+*.swp
+*.swo
+*.bak
+
+# -----------------------------
+# OS files
+# -----------------------------
+.DS_Store
+Thumbs.db
+
+# -----------------------------
+# Python
+# -----------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+
+# -----------------------------
+# Testing / Coverage / Misc
+# -----------------------------
+*.log
+test-results/
+coverage/
+*.gcda
+*.gcno
+
+# tags / indexes
+tags
+cscope.out
+
+# core dumps
+core
+core.*
+

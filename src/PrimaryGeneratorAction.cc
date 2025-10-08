@@ -43,14 +43,6 @@ namespace DTSim
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 PrimaryGeneratorAction::PrimaryGeneratorAction()
-// : G4VUserPrimaryGeneratorAction(),
-//   fParticleGun(nullptr), fMessenger(nullptr),
-//   fPositron(nullptr), fMuon(nullptr), fPion(nullptr),
-//   fKaon(nullptr), fProton(nullptr),
-//   fMomentum(1000.*MeV),
-//   fSigmaMomentum(50.*MeV),
-//   fSigmaAngle(2.*deg),
-//   fRandomizePrimary(true)
 {
   G4int nofParticles = 1;
   fParticleGun  = new G4ParticleGun(nofParticles);
@@ -137,9 +129,6 @@ void PrimaryGeneratorAction::DefineCommands()
   momentumCmd.SetParameterName("p", true);
   momentumCmd.SetRange("p>=0.");
   momentumCmd.SetDefaultValue("1000.");
-  // ok
-  //momentumCmd.SetParameterName("p", true);
-  //momentumCmd.SetRange("p>=0.");
 
   // sigmaMomentum command
   auto& sigmaMomentumCmd
