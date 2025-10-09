@@ -15,7 +15,7 @@
 # Run menu :
 /gui/addMenu run Run
 /gui/addButton run "beamOn 1" "/run/beamOn 1"
-/gui/addButton run run1 "/control/execute run1.mac"
+#/gui/addButton run run1 "/control/execute run1.mac"
 #
 # Gun menu :
 /gui/addMenu gun Gun
@@ -47,4 +47,4 @@
 /gui/addButton viewer "Update scene" "/vis/scene/notifyHandlers"
 #
 # User defined icon :
-/gui/addIcon "Run beam on" user_icon "/run/beamOn 1" run.png 
+#/gui/addIcon "Run beam on" user_icon "/run/beamOn 1" run.png 

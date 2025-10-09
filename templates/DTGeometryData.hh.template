@@ -1,0 +1,88 @@
+//
+// Auto-generated geometry data from mplDTs Python package
+// DO NOT EDIT - Regenerate using generate_geometry_data.py
+//
+
+#ifndef DTGeometryData_h
+#define DTGeometryData_h 1
+
+#include "DTGeometryBuilder.hh"
+#include "G4ios.hh"
+#include <map>
+
+namespace DTSim {
+
+/// Singleton class to hold DT geometry database
+class DTGeometryData {
+public:
+    /// Get the singleton instance
+    static DTGeometryData* Instance();
+    
+    /// Get station geometry by wheel, sector, station
+    const StationGeometry* GetStationGeometry(G4int wheel, G4int sector, G4int station) const;
+    
+    /// Get all station geometries
+    const std::map<std::tuple<G4int, G4int, G4int>, StationGeometry>& GetAllStations() const {
+        return fGeometryDB;
+    }
+    
+private:
+    DTGeometryData();
+    ~DTGeometryData() = default;
+    
+    // Delete copy/move constructors
+    DTGeometryData(const DTGeometryData&) = delete;
+    DTGeometryData& operator=(const DTGeometryData&) = delete;
+    
+    /// Initialize the geometry database
+    void InitializeGeometryDatabase();
+    
+    /// Make database key
+    static std::tuple<G4int, G4int, G4int> MakeKey(G4int wheel, G4int sector, G4int station) {
+        return std::make_tuple(wheel, sector, station);
+    }
+    
+    /// The geometry database
+    std::map<std::tuple<G4int, G4int, G4int>, StationGeometry> fGeometryDB;
+    
+    /// Singleton instance
+    static DTGeometryData* fInstance;
+};
+
+// Singleton instance
+DTGeometryData* DTGeometryData::fInstance = nullptr;
+
+// Implementation
+inline DTGeometryData* DTGeometryData::Instance() {
+    if (!fInstance) {
+        fInstance = new DTGeometryData();
+    }
+    return fInstance;
+}
+
+inline const StationGeometry* DTGeometryData::GetStationGeometry(G4int wheel, G4int sector, G4int station) const {
+    auto it = fGeometryDB.find(MakeKey(wheel, sector, station));
+    if (it != fGeometryDB.end()) {
+        return &(it->second);
+    }
+    return nullptr;
+}
+
+inline DTGeometryData::DTGeometryData() {
+    InitializeGeometryDatabase();
+}
+
+inline void DTGeometryData::InitializeGeometryDatabase() {
+    fGeometryDB.clear();
+    
+    StationGeometry stGeom;
+    SuperLayerGeometry slGeom;
+    CellGeometry cellGeom;
+    
+{STATION_DATA}
+    G4cout << "Loaded " << fGeometryDB.size() << " DT station geometries from mplDTs" << G4endl;
+}
+
+} // namespace DTSim
+
+#endif

@@ -90,3 +90,8 @@ cscope.out
 core
 core.*
 
+# environment files
+.env
+.venv
+env/
+venv/
