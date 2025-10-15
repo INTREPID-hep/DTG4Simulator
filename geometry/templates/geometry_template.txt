@@ -1,0 +1,27 @@
+// DT Station Geometry Template
+// This file contains fixed definitions
+// Dynamic geometry is appended by generate_geometry_data.py
+
+// World volume
+:VOLU world BOX 800. 800. 750. G4_Galactic
+
+// Axis markers (for visualization)
+:SOLID AxisXSolid BOX 50.0 5.0 5.0
+:SOLID AxisYSolid BOX 5.0 50.0 5.0
+:SOLID AxisZSolid BOX 5.0 5.0 50.0
+
+:VOLU AxisX AxisXSolid G4_Galactic
+:VOLU AxisY AxisYSolid G4_Galactic
+:VOLU AxisZ AxisZSolid G4_Galactic
+
+:PLACE AxisX 1 world R0 100.0 0.0 0.0
+:PLACE AxisY 1 world R0 0.0 200.0 0.0
+:PLACE AxisZ 1 world R0 0.0 0.0 300.0
+
+// Identity rotation matrix
+:ROTM R0 0. 0. 0.
+
+// ============================================================================
+// Station geometries below (generated dynamically)
+// ============================================================================
+

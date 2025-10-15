@@ -1,126 +1,113 @@
 #include "DetectorConstruction.hh"
-#include "DTGeometryBuilder.hh"  // Auto-generated geometry builder
-
-#include "G4LogicalVolume.hh"
-#include "G4VPhysicalVolume.hh"
-#include "G4PVPlacement.hh"
-
-#include "G4Box.hh"
-
 #include "G4Material.hh"
-#include "G4Element.hh"
-#include "G4MaterialTable.hh"
-
 #include "G4NistManager.hh"
+#include "G4Box.hh"
+#include "G4LogicalVolume.hh"
+#include "G4PVPlacement.hh"
 #include "G4SystemOfUnits.hh"
-
 #include "G4VisAttributes.hh"
 #include "G4Colour.hh"
-
-#include "G4ios.hh"
+#include "G4tgbVolumeMgr.hh"
+#include "G4tgrMessenger.hh"
+#include "G4LogicalVolumeStore.hh"
 
 
 namespace DTSim
 {
 
-DetectorConstruction::DetectorConstruction() {}
+DetectorConstruction::DetectorConstruction()
+{
+    fMessenger = new G4tgrMessenger;
+}
 
-DetectorConstruction::~DetectorConstruction(){}
+DetectorConstruction::~DetectorConstruction()
+{
+    delete fMessenger;
+}
 
 G4VPhysicalVolume* DetectorConstruction::Construct()
 {
-    // Construct materials
-    ConstructMaterials();
-
-    // Construct world volume
-    auto worldPhysical = ConstructWorld();
+    // Read materials from text file
+    G4String materialsFile = "geometry/materials.tg";
+    fMessenger->SetVerboseLevel(1);
     
-    // Build DT Station using mplDTs geometry
-    DTGeometryBuilder builder;
+    G4tgbVolumeMgr* volMgr = G4tgbVolumeMgr::GetInstance();
+    volMgr->AddTextFile(materialsFile);
     
-    // Build MB2 station: Wheel=-1, Sector=1, Station=2
-    fDTStationLogical = builder.BuildStation(-1, 1, 2, fWorldLogical, false);
+    // Read geometry from text file
+    G4String geometryFile = "geometry/dt_geometry.txt";
+    volMgr->AddTextFile(geometryFile);
     
-    if (!fDTStationLogical) {
-        G4cerr << "ERROR: Failed to build DT Station!" << G4endl;
-        return worldPhysical;
-    }
-    // Optionally build more stations:
-    // builder.BuildStation(-1, 1, 1, fWorldLogical, true);  // MB1
-    // builder.BuildStation(-1, 1, 3, fWorldLogical, true);  // MB3
+    // Construct the geometry
+    const G4VPhysicalVolume* worldPhys = volMgr->ReadAndConstructDetector();
     
     // Set visualization attributes
     SetVisualizationAttributes();
-
-    return worldPhysical;
-}
-
-G4Material* DetectorConstruction::GetMaterial(const G4String& name)
-{
-    auto material = G4Material::GetMaterial(name);
-    if (!material) {
-        G4ExceptionDescription msg;
-        msg << "Material " << name << " not found!";
-        G4Exception("DetectorConstruction::GetMaterial()",
-                    "MyCode0001", FatalException, msg);
-    }
-    return material;
-}
-
-void DetectorConstruction::ConstructMaterials()
-{
-  auto nistManager = G4NistManager::Instance();
-
-  // Air 
-  auto air = nistManager->FindOrBuildMaterial("G4_AIR");
-  G4double air_density = air->GetDensity();
-
-  // Gas mixture
-  auto gas_mixture = new G4Material("GasMixture", air_density, 2);
-  gas_mixture->AddMaterial(nistManager->FindOrBuildMaterial("G4_Ar"), 85*perCent);
-  gas_mixture->AddMaterial(nistManager->FindOrBuildMaterial("G4_CARBON_DIOXIDE"), 15*perCent);  
-  // Aluminium - Honeycomb (GAP)
-  nistManager->FindOrBuildMaterial("G4_Al");
-  
-  // iron Yoke
-  nistManager->FindOrBuildMaterial("G4_Fe");
-  
-  // Vacuum "Galactic"
-  nistManager->FindOrBuildMaterial("G4_Galactic");
-
-  // Vacuum "Air with low density"
-  G4double density = 1.0e-5*air_density;
-  nistManager
-    ->BuildMaterialWithNewDensity("Air_lowDensity", "G4_AIR", density);
-
-  G4cout << G4endl << "The materials defined are : " << G4endl << G4endl;
-  G4cout << *(G4Material::GetMaterialTable()) << G4endl;
-}
-
-G4VPhysicalVolume* DetectorConstruction::ConstructWorld()
-{
-    // Get materials when needed
-    auto defaultMaterial = GetMaterial("G4_Galactic");
     
-    // CMS cavern 8m x 8m x 15m
-    auto worldSolid = new G4Box("worldBox", 0.5 * 8*m, 0.5 * 8*m, 0.5 * 15*m);
-    fWorldLogical = new G4LogicalVolume(worldSolid, defaultMaterial, "worldLogical");
-    auto worldPhysical = new G4PVPlacement(
-      nullptr, G4ThreeVector(), fWorldLogical, "worldPhysical", nullptr, false, 0, true
-    );
-    
-  return worldPhysical;
+    return const_cast<G4VPhysicalVolume*>(worldPhys);
 }
+
 
 void DetectorConstruction::SetVisualizationAttributes()
 {
-  G4VisAttributes invisible(G4VisAttributes::GetInvisible());
-  G4VisAttributes blue(G4Colour::Blue());
-  G4VisAttributes green(G4Colour::Green());
-  G4VisAttributes red(G4Colour::Red());
+    // G4Colour  white   ()              ;  // white
+    // G4Colour  white   (1.0, 1.0, 1.0) ;  // white
+    // G4Colour  gray    (0.5, 0.5, 0.5) ;  // gray
+    // G4Colour  black   (0.0, 0.0, 0.0) ;  // black
+    // G4Colour  red     (1.0, 0.0, 0.0) ;  // red
+    // G4Colour  green   (0.0, 1.0, 0.0) ;  // green
+    // G4Colour  blue    (0.0, 0.0, 1.0) ;  // blue
+    // G4Colour  cyan    (0.0, 1.0, 1.0) ;  // cyan
+    // G4Colour  magenta (1.0, 0.0, 1.0) ;  // magenta
+    // G4Colour  yellow  (1.0, 1.0, 0.0) ;  // yellow
 
-  fWorldLogical->SetVisAttributes(red);
-  fDTStationLogical->SetVisAttributes(green);
+    // Get logical volume store
+    auto logVolStore = G4LogicalVolumeStore::GetInstance();
+    
+    // World invisible
+    G4LogicalVolume* worldLV = logVolStore->GetVolume("world");
+    if (worldLV) {
+        worldLV->SetVisAttributes(G4Colour::Red());
+    }
+    
+    // DT Frame - semi-transparent blue
+    G4LogicalVolume* frameLV = logVolStore->GetVolume("DTFrame");
+    if (frameLV) {
+        auto frameVis = new G4VisAttributes(G4Colour(0.0, 0.0, 1.0, 0.5));
+        frameVis->SetForceSolid(false);
+        frameLV->SetVisAttributes(frameVis);
+    }
+    
+    // Drift cells - yellow
+    G4LogicalVolume* cellLV = logVolStore->GetVolume("DriftCell");
+    if (cellLV) {
+        auto cellVis = new G4VisAttributes(G4Colour(1.0, 1.0, 0.0, 0.7));
+        cellVis->SetForceSolid(true);
+        cellLV->SetVisAttributes(cellVis);
+    }
+
+    // Axis markers - white and solid
+    G4LogicalVolume* axisXLV = logVolStore->GetVolume("AxisX");
+    if (axisXLV) {
+        auto axisXVis = new G4VisAttributes(G4Colour::White());
+        axisXVis->SetForceSolid(true);
+        axisXLV->SetVisAttributes(axisXVis);
+    }
+    
+    G4LogicalVolume* axisYLV = logVolStore->GetVolume("AxisY");
+    if (axisYLV) {
+        auto axisYVis = new G4VisAttributes(G4Colour::White());
+        axisYVis->SetForceSolid(true);
+        axisYLV->SetVisAttributes(axisYVis);
+    }
+    
+    G4LogicalVolume* axisZLV = logVolStore->GetVolume("AxisZ");
+    if (axisZLV) {
+        auto axisZVis = new G4VisAttributes(G4Colour::White());
+        axisZVis->SetForceSolid(true);
+        axisZLV->SetVisAttributes(axisZVis);
+    }
+    
 }
 
 }

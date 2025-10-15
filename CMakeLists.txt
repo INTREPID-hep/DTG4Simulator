@@ -31,11 +31,19 @@ file(GLOB sources ${PROJECT_SOURCE_DIR}/src/*.cc)
 file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
 
 file(GLOB MACRO_FILES "macros/*.mac")
+file(GLOB GEOMETRY_FILES "geometry/*.tg")
 #----------------------------------------------------------------------------
 # Copy all scripts to the build directory, i.e. the directory in which we
 # build DTSim. This is so that we can run the executable directly because it
 # relies on these scripts being in the current working directory.
 file(COPY ${MACRO_FILES} DESTINATION ${CMAKE_BINARY_DIR}/)
+
+#----------------------------------------------------------------------------
+# Copy geometry files to the build directory
+#
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/geometry)
+  file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/geometry DESTINATION ${CMAKE_BINARY_DIR}/)
+endif()
 
 #----------------------------------------------------------------------------
 # Add the executable, and link it to the Geant4 libraries

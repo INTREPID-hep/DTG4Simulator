@@ -1,0 +1,25 @@
+// Simple DT geometry test
+
+// World volume (use G4_AIR directly)
+:VOLU world BOX 800. 800. 750. G4_Galactic
+
+// Simple DT Frame (placeholder)
+:VOLU DTFrame BOX 133.399994 18.100000 125.550003 G4_AIR
+
+:PLACE DTFrame 1 world RM_WH_1Sc1St2 512.475 -21.43 -267.75
+
+// Single drift cell for testing
+:VOLU DriftCell BOX 2.100000 0.650000 117.400002 GasMixture
+:PLACE DriftCell 1 DTFrame R0 -119.45 0.0 13.7
+
+// Axis markers (for visualization)
+:VOLU AxisX BOX 50.0 5.0 5.0 G4_Galactic
+:VOLU AxisY BOX 5.0 50.0 5.0 G4_Galactic
+:VOLU AxisZ BOX 5.0 5.0 50.0 G4_Galactic
+
+:PLACE AxisX 1 world R0 100.0 0.0 0.0
+:PLACE AxisY 1 world R0 0.0 200.0 0.0
+:PLACE AxisZ 1 world R0 0.0 0.0 300.0
+
+:ROTM R0 0. 0. 0.
+:ROTM RM_WH_1Sc1St2  0. 1. 0. 0. 0. -1. -1. 0. 0.
