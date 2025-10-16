@@ -2,16 +2,212 @@ from mpldts.geometry import Station
 import numpy as np
 from pathlib import Path
 
+
 def extract_rotation(matrix):
     """
-    Extract rotation from 4x4 transformation matrix
-    Returns: rotation_flat
-    - rotation_flat: 9 values (XX, XY, XZ, YX, YY, YZ, ZX, ZY, ZZ)
+    Extract rotation from 4x4 transformation matrix.
+    
+    Args:
+        matrix: 4x4 transformation matrix
+        
+    Returns:
+        rotation_flat: 9 values (XX, XY, XZ, YX, YY, YZ, ZX, ZY, ZZ)
     """
     rotation = matrix[:3, :3]
     rotation_flat = rotation.flatten()
-    
     return rotation_flat
+
+
+def create_station_volume(station, wheel, sector, station_num):
+    """
+    Create the station volume definition.
+    
+    Args:
+        station: Station object from mplDTs
+        wheel, sector, station_num: Station identifiers
+        
+    Returns:
+        String with station volume and placement definitions
+    """
+    geometry = ""
+    station_bounds = station.bounds
+    station_name = f"Station_W{wheel}_Sec{sector}_St{station_num}"
+    
+    # Define station volume (BOX: half-widths in X, Y, Z)
+    geometry += f":VOLU {station_name} BOX "
+    geometry += f"{station_bounds[0]/2:.6f} {station_bounds[2]/2:.6f} {station_bounds[1]/2:.6f} G4_AIR\n"
+    
+    # Get station transformation and rotation
+    station_transform = station.transformer.get_transformation(from_frame="Station", to_frame="CMS")
+    station_rot = extract_rotation(station_transform)
+    station_center = station.global_center
+    
+    # Create rotation matrix
+    geometry += f":ROTM RM_Station_{wheel}_{sector}_{station_num} "
+    geometry += f"{station_rot[0]:.6f} {station_rot[1]:.6f} {station_rot[2]:.6f} "
+    geometry += f"{station_rot[3]:.6f} {station_rot[4]:.6f} {station_rot[5]:.6f} "
+    geometry += f"{station_rot[6]:.6f} {station_rot[7]:.6f} {station_rot[8]:.6f}\n"
+    
+    # Place station in world
+    geometry += f":PLACE {station_name} 1 world RM_Station_{wheel}_{sector}_{station_num} "
+    geometry += f"{station_center[0]:.6f} {station_center[1]:.6f} {station_center[2]:.6f}\n\n"
+    
+    return geometry, station_name, station_bounds
+
+
+def create_yoke(station, wheel, sector, station_num, station_bounds):
+    """
+    Create iron yoke volume positioned radially below the station.
+    
+    Args:
+        station: Station object from mplDTs
+        wheel, sector, station_num: Station identifiers
+        station_bounds: Station dimensions [width, height, length]
+        
+    Returns:
+        String with yoke volume and placement definitions
+    """
+    geometry = ""
+    yoke_name = f"Yoke_W{wheel}_Sec{sector}_St{station_num}"
+    station_center = station.global_center
+    
+    geometry += f"// Iron Yoke (radially below station)\n"
+    geometry += f":VOLU {yoke_name} BOX "
+    geometry += f"{station_bounds[0]/2:.6f} {station_bounds[2]/2:.6f} {station_bounds[1]/2:.6f} G4_Fe\n"
+    
+    # Calculate yoke position: radially inward from station in XY plane
+    station_pos_xy = np.array([station_center[0], station_center[1], 0.0])
+    radial_distance_xy = np.linalg.norm(station_pos_xy)
+    radial_unit_xy = station_pos_xy / radial_distance_xy
+    
+    # Move yoke inward by station_height/2 + yoke_height/2
+    yoke_thickness = station_bounds[1]
+    offset = (station_bounds[1]/2 + yoke_thickness/2)
+    yoke_pos_xy = station_pos_xy - radial_unit_xy * offset
+    yoke_pos = np.array([yoke_pos_xy[0], yoke_pos_xy[1], station_center[2]])
+    
+    # Place yoke with same rotation as station
+    geometry += f":PLACE {yoke_name} 1 world RM_Station_{wheel}_{sector}_{station_num} "
+    geometry += f"{yoke_pos[0]:.6f} {yoke_pos[1]:.6f} {yoke_pos[2]:.6f}\n\n"
+    
+    return geometry
+
+
+def create_superlayer_cells(station, wheel, sector, station_num, station_name):
+    """
+    Create all drift cells for all superlayers in the station.
+    
+    Args:
+        station: Station object from mplDTs
+        wheel, sector, station_num: Station identifiers
+        station_name: Name of the station volume
+        
+    Returns:
+        String with cell solid definitions and placements
+    """
+    geometry = ""
+    
+    for sl in station.super_layers:
+        geometry += f"// SuperLayer {sl.number} - Cells\n"
+        
+        # Define drift cell solid for this superlayer
+        first_cell = None
+        if len(sl.layers) > 0 and len(sl.layers[0].cells) > 0:
+            first_cell = sl.layers[0].cells[0]
+        
+        cell_solid_name = f"DriftCellSolid_W{wheel}_Sec{sector}_St{station_num}_SL{sl.number}"
+        if first_cell:
+            cell_bounds = first_cell.bounds
+            geometry += f":SOLID {cell_solid_name} BOX "
+            geometry += f"{cell_bounds[0]/2:.6f} {cell_bounds[2]/2:.6f} {cell_bounds[1]/2:.6f}\n"
+        
+        # SL2 needs its own rotation matrix (rotated 90° in Z)
+        if sl.number == 2:
+            sl_transform = sl.transformer.get_transformation(from_frame="SuperLayer", to_frame="Station")
+            sl_rot = extract_rotation(sl_transform)
+            
+            sl_rot_name = f"RM_SL2_W{wheel}_Sec{sector}_St{station_num}"
+            geometry += f":ROTM {sl_rot_name} "
+            geometry += f"{sl_rot[0]:.6f} {sl_rot[1]:.6f} {sl_rot[2]:.6f} "
+            geometry += f"{sl_rot[3]:.6f} {sl_rot[4]:.6f} {sl_rot[5]:.6f} "
+            geometry += f"{sl_rot[6]:.6f} {sl_rot[7]:.6f} {sl_rot[8]:.6f}\n"
+            
+            rotation_to_use = sl_rot_name
+        else:
+            # SL1 and SL3 use identity rotation
+            rotation_to_use = "R0"
+            sl_transform = None
+        
+        # Place all cells in all layers
+        for layer in sl.layers:
+            for cell in layer.cells:
+                cell_name = f"Cell_W{wheel}_Sec{sector}_St{station_num}_SL{sl.number}_L{layer.number}_C{cell.number}"
+                
+                # Define volume using the superlayer-specific solid
+                geometry += f":VOLU {cell_name} {cell_solid_name} GasMixture\n"
+                
+                # Get cell position relative to station
+                cell_center = cell.local_center
+                if sl.number == 2 and sl_transform is not None:
+                    cell_center = np.dot(sl_transform[:3, :3], cell.local_center)
+                
+                # Place cell in station
+                geometry += f":PLACE {cell_name} 1 {station_name} {rotation_to_use} "
+                geometry += f"{cell_center[0]:.6f} {cell_center[1]:.6f} {cell_center[2]:.6f}\n"
+        
+        geometry += "\n"
+    
+    return geometry
+
+
+def create_honeycomb(station, wheel, sector, station_num, station_name, station_bounds):
+    """
+    Create aluminum honeycomb layer between SL2 and SL1.
+
+    Args:
+        station: Station object from mplDTs
+        wheel, sector, station_num: Station identifiers
+        station_name: Name of the station volume
+        station_bounds: Station dimensions [width, height, length]
+        
+    Returns:
+        String with honeycomb volume and placement definitions
+    """
+    geometry = ""
+    honeycomb_name = f"Honeycomb_W{wheel}_Sec{sector}_St{station_num}"
+    
+    # Get superlayer objects to calculate actual gap
+    sl1 = [sl for sl in station.super_layers if sl.number == 1]
+    sl2 = [sl for sl in station.super_layers if sl.number == 2]
+    
+    # Handle MB4 stations that don't have SL2 (use SL3 instead)
+    if not sl2:
+        sl2 = [sl for sl in station.super_layers if sl.number == 3]
+
+    sl1 = sl1[0]
+    sl2 = sl2[0]
+    
+    # Calculate honeycomb thickness from actual gap
+    # Z coordinate is the height/stacking direction in local station frame
+    sl1_z_min = sl1.local_cords_at_min[2]  # Bottom of SL1
+    sl2_z_max = sl2.local_cords_at_min[2] + sl2.bounds[1]  # Top of SL2
+    honeycomb_thickness = sl1_z_min - sl2_z_max  # Gap between them (~12.8 cm)
+    
+    # Honeycomb dimensions: same width/length as station
+    geometry += f"// Aluminum Honeycomb (between SL2 and SL1)\n"
+    geometry += f":VOLU {honeycomb_name} BOX "
+    geometry += f"{station_bounds[0]/2:.6f} {station_bounds[2]/2:.6f} {honeycomb_thickness/2:.6f} G4_Al\n"
+    
+    # Position: midpoint between SL2 (top) and SL1 (bottom) in Z
+    honeycomb_z = (sl2_z_max + sl1_z_min) / 2.0
+    honeycomb_pos = [0.0, 0.0, honeycomb_z]
+    
+    # Place honeycomb in station (no rotation needed)
+    geometry += f":PLACE {honeycomb_name} 1 {station_name} R0 "
+    geometry += f"{honeycomb_pos[0]:.6f} {honeycomb_pos[1]:.6f} {honeycomb_pos[2]:.6f}\n\n"
+    
+    return geometry
+
 
 def generate_station_geometry_ascii(
     stations_list,
@@ -22,7 +218,7 @@ def generate_station_geometry_ascii(
     include_honeycomb=False
 ):
     """
-    Generate Geant4 ASCII text geometry for multiple DT stations
+    Generate Geant4 ASCII text geometry for multiple DT stations.
     Each station is saved in a separate file, and a concentrator file includes them all.
     
     Args:
@@ -31,11 +227,9 @@ def generate_station_geometry_ascii(
         concentrator_template: Path to concentrator template file
         concentrator_output: Output concentrator geometry file
         include_yoke: If True, add iron yoke blocks radially below each station
-        include_honeycomb: If True, add aluminum honeycomb layer between SL1 and SL2
+        include_honeycomb: If True, add aluminum honeycomb layer between SL2 and SL1
     """
-    
     # Create output directory if it doesn't exist
-    from pathlib import Path
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     
     # Generate individual station files
@@ -54,141 +248,28 @@ def generate_station_geometry_ascii(
         station_geometry += f"// ===== Station: Wheel={wheel}, Sector={sector}, Station={station_num} =====\n"
         station_geometry += f"// {station.name}\n\n"
         
-        station_bounds = station.bounds
-        station_name = f"Station_W{wheel}_Sec{sector}_St{station_num}"
-        station_geometry += f":VOLU {station_name} BOX {station_bounds[0]/2:.6f} {station_bounds[2]/2:.6f} {station_bounds[1]/2:.6f} G4_AIR\n"
-        
-        # Get station transformation
-        station_transform = station.transformer.get_transformation(from_frame="Station", to_frame="CMS")
-        station_rot = extract_rotation(station_transform)
-        station_center = station.global_center
-        
-        # Create rotation matrix for station
-        station_geometry += f":ROTM RM_Station_{wheel}_{sector}_{station_num} "
-        station_geometry += f"{station_rot[0]:.6f} {station_rot[1]:.6f} {station_rot[2]:.6f} "
-        station_geometry += f"{station_rot[3]:.6f} {station_rot[4]:.6f} {station_rot[5]:.6f} "
-        station_geometry += f"{station_rot[6]:.6f} {station_rot[7]:.6f} {station_rot[8]:.6f}\n"
-        
-        # Place station in world
-        station_geometry += f":PLACE {station_name} 1 world RM_Station_{wheel}_{sector}_{station_num} "
-        station_geometry += f"{station_center[0]:.6f} {station_center[1]:.6f} {station_center[2]:.6f}\n\n"
+        # Create station volume and placement
+        station_vol, station_name, station_bounds = create_station_volume(
+            station, wheel, sector, station_num
+        )
+        station_geometry += station_vol
         
         # Add yoke if requested
         if include_yoke:
-            yoke_name = f"Yoke_W{wheel}_Sec{sector}_St{station_num}"
-            # Yoke has same dimensions as station
-            station_geometry += f"// Iron Yoke (radially below station)\n"
-            station_geometry += f":VOLU {yoke_name} BOX {station_bounds[0]/2:.6f} {station_bounds[2]/2:.6f} {station_bounds[1]/2:.6f} G4_Fe\n"
-            
-            # Calculate yoke position: radially inward from station
-            # Direction vector from origin (0,0,0) to station center in XY plane only
-            station_pos_xy = np.array([station_center[0], station_center[1], 0.0])
-            radial_distance_xy = np.linalg.norm(station_pos_xy)
-            
-            # Unit vector pointing radially outward in XY plane
-            radial_unit_xy = station_pos_xy / radial_distance_xy
-            
-            # Yoke thickness (same as station height)
-            yoke_thickness = station_bounds[1]  # height dimension
-            
-            # Yoke center: move inward in XY plane by station_height/2 + yoke_height/2
-            # Keep same Z coordinate as station
-            offset = (station_bounds[1]/2 + yoke_thickness/2)
-            yoke_pos_xy = station_pos_xy - radial_unit_xy * offset
-            yoke_pos = np.array([yoke_pos_xy[0], yoke_pos_xy[1], station_center[2]])
-            
-            # Yoke uses same rotation as station
-            station_geometry += f":PLACE {yoke_name} 1 world RM_Station_{wheel}_{sector}_{station_num} "
-            station_geometry += f"{yoke_pos[0]:.6f} {yoke_pos[1]:.6f} {yoke_pos[2]:.6f}\n\n"
+            station_geometry += create_yoke(
+                station, wheel, sector, station_num, station_bounds
+            )
         
-        # Process all superlayers (1, 2, 3)
-        # Place cells directly in station (no superlayer/layer volumes)
-        for sl in station.super_layers:    
-            station_geometry += f"// SuperLayer {sl.number} - Cells\n"
-            
-            # Define drift cell solid for this superlayer (dimensions may vary between superlayers)
-            first_cell = None
-            if len(sl.layers) > 0 and len(sl.layers[0].cells) > 0:
-                first_cell = sl.layers[0].cells[0]
-            
-            cell_solid_name = f"DriftCellSolid_W{wheel}_Sec{sector}_St{station_num}_SL{sl.number}"
-            if first_cell:
-                cell_bounds = first_cell.bounds
-                station_geometry += f":SOLID {cell_solid_name} BOX {cell_bounds[0]/2:.6f} {cell_bounds[2]/2:.6f} {cell_bounds[1]/2:.6f}\n"
-            
-            # SL2 is rotated, so it needs its own rotation matrix
-            if sl.number == 2:
-                # Get superlayer transformation relative to station
-                sl_transform = sl.transformer.get_transformation(from_frame="SuperLayer", to_frame="Station")
-                sl_rot = extract_rotation(sl_transform)
-                
-                # Create rotation matrix for SL2
-                sl_rot_name = f"RM_SL2_W{wheel}_Sec{sector}_St{station_num}"
-                station_geometry += f":ROTM {sl_rot_name} "
-                station_geometry += f"{sl_rot[0]:.6f} {sl_rot[1]:.6f} {sl_rot[2]:.6f} "
-                station_geometry += f"{sl_rot[3]:.6f} {sl_rot[4]:.6f} {sl_rot[5]:.6f} "
-                station_geometry += f"{sl_rot[6]:.6f} {sl_rot[7]:.6f} {sl_rot[8]:.6f}\n"
-                
-                rotation_to_use = sl_rot_name
-            else:
-                # SL1 and SL3 use identity rotation
-                rotation_to_use = "R0"
-            
-            # Process each layer - place all cells
-            for layer in sl.layers:
-                for cell in layer.cells:
-                    cell_name = f"Cell_W{wheel}_Sec{sector}_St{station_num}_SL{sl.number}_L{layer.number}_C{cell.number}"
-                    
-                    # Define volume using the superlayer-specific solid
-                    station_geometry += f":VOLU {cell_name} {cell_solid_name} GasMixture\n"
-                    
-                    # Get cell position relative to station (local coordinates)
-                    cell_center = cell.local_center
-
-                    if sl.number == 2:
-                        cell_center = np.dot(sl_transform[:3, :3], cell.local_center)
-
-                    # Place cell in station with appropriate rotation
-                    station_geometry += f":PLACE {cell_name} 1 {station_name} {rotation_to_use} "
-                    station_geometry += f"{cell_center[0]:.6f} {cell_center[1]:.6f} {cell_center[2]:.6f}\n"
-                    #break # Only one cell to test
-            station_geometry += "\n"
+        # Add drift cells for all superlayers
+        station_geometry += create_superlayer_cells(
+            station, wheel, sector, station_num, station_name
+        )
         
-        # Add honeycomb layer between SL2 and SL1 if requested
-        # Note: Stacking order is SL3 (bottom) -> SL2 (middle) -> SL1 (top)
-        # Honeycomb goes in the gap between SL2 and SL1
+        # Add honeycomb layer if requested
         if include_honeycomb:
-            honeycomb_name = f"Honeycomb_W{wheel}_Sec{sector}_St{station_num}"
-            
-            # Get superlayer objects to calculate actual gap
-            sl1 = [sl for sl in station.super_layers if sl.number == 1]
-            sl2 = [sl for sl in station.super_layers if sl.number == 2]
-            if not sl2:
-                sl2 = [sl for sl in station.super_layers if sl.number == 3]
-            sl1 = sl1[0]
-            sl2 = sl2[0]
-
-            # Calculate honeycomb thickness from actual gap between SL2 (top) and SL1 (bottom)
-            # Z coordinate is the height/stacking direction in local station frame
-            sl1_z_min = sl1.local_cords_at_min[2]  # Bottom of SL1
-            sl2_z_max = sl2.local_cords_at_min[2] + sl2.bounds[1]  # Top of SL2
-            honeycomb_thickness = sl1_z_min - sl2_z_max  # Gap between them (≈12.8 cm)
-            
-            # Honeycomb dimensions: same width/length as station
-            station_geometry += f"// Aluminum Honeycomb (between SL2 and SL1)\n"
-            station_geometry += f":VOLU {honeycomb_name} BOX {station_bounds[0]/2:.6f} {station_bounds[2]/2:.6f} {honeycomb_thickness/2:.6f} G4_Al\n"
-            
-            # Position: midpoint between SL2 (top) and SL1 (bottom) in Z
-            honeycomb_z = (sl2_z_max + sl1_z_min) / 2.0
-            
-            # Position: midpoint between SL2 (top) and SL1 (bottom) in Z
-            honeycomb_z = (sl2_z_max + sl1_z_min) / 2.0
-            
-            # Keep X and Y from station center (0, 0 in local frame)
-            honeycomb_pos = [0.0, 0.0, honeycomb_z]
-            
-            station_geometry += f":PLACE {honeycomb_name} 1 {station_name} R0 "
-            station_geometry += f"{honeycomb_pos[0]:.6f} {honeycomb_pos[1]:.6f} {honeycomb_pos[2]:.6f}\n\n"
+            station_geometry += create_honeycomb(
+                station, wheel, sector, station_num, station_name, station_bounds
+            )
         
         # Write this station's geometry to its own file
         with open(station_filepath, 'w') as f:
@@ -197,20 +278,36 @@ def generate_station_geometry_ascii(
         print(f"  ✓ Generated: {station_filename}")
     
     # Create concentrator file with #include directives
+    _create_concentrator_file(
+        station_files, concentrator_template, concentrator_output, stations_list
+    )
+
+
+def _create_concentrator_file(station_files, template_path, output_path, stations_list):
+    """
+    Create the main concentrator geometry file that includes all station files.
+    
+    Args:
+        station_files: List of station filenames
+        template_path: Path to concentrator template file
+        output_path: Output path for concentrator file
+        stations_list: List of station tuples for statistics
+    """
     include_lines = "\n".join([f"#include geometry/stations/{fname}" for fname in station_files])
     
     # Read concentrator template
-    with open(concentrator_template, 'r') as f:
+    with open(template_path, 'r') as f:
         concentrator_content = f.read()
     
     # Replace {STATIONS} placeholder with include directives
     concentrator_content = concentrator_content.replace('{STATIONS}', include_lines)
     
     # Write concentrator file
-    with open(concentrator_output, 'w') as f:
+    with open(output_path, 'w') as f:
         f.write(concentrator_content)
     
-    print(f"\n✓ Concentrator file: {concentrator_output}")
+    # Print summary statistics
+    print(f"\n✓ Concentrator file: {output_path}")
     print(f"  Stations: {len(stations_list)}")
     
     # Count total cells
@@ -218,11 +315,11 @@ def generate_station_geometry_ascii(
     for wheel, sector, station_num in stations_list:
         station = Station(wheel=wheel, sector=sector, station=station_num)
         for sl in station.super_layers:
-            if sl.number in [1, 2, 3]:
-                for layer in sl.layers:
-                    total_cells += len(layer.cells)
+            for layer in sl.layers:
+                total_cells += len(layer.cells)
     
     print(f"  Total cells: {total_cells}")
+
 
 if __name__ == "__main__":
     # Define stations to include (wheel, sector, station)
@@ -242,6 +339,6 @@ if __name__ == "__main__":
         output_dir='stations',
         concentrator_template='geometry_concentrator_template',
         concentrator_output='geometry_concentrator.tg',
-        include_yoke=True,  # Set to True to include iron yokes
-        include_honeycomb=True  # Set to True to include aluminum honeycomb
+        include_yoke=True,       # Include iron yokes below stations
+        include_honeycomb=True   # Include aluminum honeycomb between SL2 and SL1
     )
