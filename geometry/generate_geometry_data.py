@@ -3,6 +3,70 @@ import numpy as np
 from pathlib import Path
 
 
+def calculate_yoke_thicknesses(wheel, sector):
+    """
+    Calculate yoke thickness for each station type by measuring the radial gap
+    between consecutive stations.
+    
+    - MB1 yoke: uses MB1 station height (innermost station)
+    - MB2 yoke: gap between MB1 and MB2
+    - MB3 yoke: gap between MB2 and MB3
+    - MB4 yoke: gap between MB3 and MB4
+    
+    Args:
+        wheel: Wheel number
+        sector: Sector number
+        
+    Returns:
+        Dictionary mapping station_num -> yoke_thickness in cm
+    """
+    yoke_thickness = {}
+    
+    # Get all stations
+    stations = {}
+    for st_num in [1, 2, 3, 4]:
+        try:
+            station = Station(wheel=wheel, sector=sector, station=st_num)
+            stations[st_num] = station
+        except:
+            continue
+    
+    # MB1 yoke uses the station height itself (innermost station)
+    if 1 in stations:
+        yoke_thickness[1] = stations[1].bounds[1]
+    
+    # Calculate gaps between consecutive stations for MB2, MB3, MB4
+    for st_num in [1, 2, 3]:
+        next_st = st_num + 1
+        
+        if st_num not in stations or next_st not in stations:
+            continue
+        
+        station = stations[st_num]
+        next_station = stations[next_st]
+        
+        # Outer edge of current station (radial distance + half height)
+        center = station.global_center
+        radial_dist = np.sqrt(center[0]**2 + center[1]**2)
+        outer_edge = radial_dist + station.bounds[1]/2
+        
+        # Inner edge of next station (radial distance - half height)
+        next_center = next_station.global_center
+        next_radial_dist = np.sqrt(next_center[0]**2 + next_center[1]**2)
+        next_inner_edge = next_radial_dist - next_station.bounds[1]/2
+        
+        # Gap between them is the yoke thickness for the next station
+        gap = next_inner_edge - outer_edge - 5.0  # Subtract 5 cm safety margin
+        yoke_thickness[next_st] = gap
+    
+    return yoke_thickness
+
+
+# Calculate yoke thicknesses once (using a reference station)
+# These values are consistent across all wheels/sectors for same station type
+YOKE_THICKNESS = calculate_yoke_thicknesses(wheel=-1, sector=2)
+
+
 def extract_rotation(matrix):
     """
     Extract rotation from 4x4 transformation matrix.
@@ -59,6 +123,12 @@ def create_yoke(station, wheel, sector, station_num, station_bounds):
     """
     Create iron yoke volume positioned radially below the station.
     
+    Yoke thickness fills the radial gap between consecutive stations:
+    - MB1 yoke: uses MB1 station height (innermost, no station below)
+    - MB2 yoke: fills gap between MB1 and MB2 (radially inward from MB2)
+    - MB3 yoke: fills gap between MB2 and MB3 (radially inward from MB3)
+    - MB4 yoke: fills gap between MB3 and MB4 (radially inward from MB4)
+    
     Args:
         station: Station object from mplDTs
         wheel, sector, station_num: Station identifiers
@@ -71,17 +141,20 @@ def create_yoke(station, wheel, sector, station_num, station_bounds):
     yoke_name = f"Yoke_W{wheel}_Sec{sector}_St{station_num}"
     station_center = station.global_center
     
-    geometry += f"// Iron Yoke (radially below station)\n"
+    # Get yoke thickness for this station type (gap to next station)
+    yoke_thickness = YOKE_THICKNESS.get(station_num, 40.0)  # Default if not found
+    
+    # Yoke dimensions: same width and length as station, thickness fills radial gap
+    geometry += f"// Iron Yoke (radially inward, thickness={yoke_thickness:.2f} cm)\n"
     geometry += f":VOLU {yoke_name} BOX "
-    geometry += f"{station_bounds[0]/2:.6f} {station_bounds[2]/2:.6f} {station_bounds[1]/2:.6f} G4_Fe\n"
+    geometry += f"{station_bounds[0]/2:.6f} {station_bounds[2]/2:.6f} {yoke_thickness/2:.6f} G4_Fe\n"
     
     # Calculate yoke position: radially inward from station in XY plane
     station_pos_xy = np.array([station_center[0], station_center[1], 0.0])
     radial_distance_xy = np.linalg.norm(station_pos_xy)
     radial_unit_xy = station_pos_xy / radial_distance_xy
     
-    # Move yoke inward by station_height/2 + yoke_height/2
-    yoke_thickness = station_bounds[1]
+    # Move yoke inward by station_height/2 + yoke_thickness/2
     offset = (station_bounds[1]/2 + yoke_thickness/2)
     yoke_pos_xy = station_pos_xy - radial_unit_xy * offset
     yoke_pos = np.array([yoke_pos_xy[0], yoke_pos_xy[1], station_center[2]])
@@ -154,7 +227,7 @@ def create_superlayer_cells(station, wheel, sector, station_num, station_name):
                 # Place cell in station
                 geometry += f":PLACE {cell_name} 1 {station_name} {rotation_to_use} "
                 geometry += f"{cell_center[0]:.6f} {cell_center[1]:.6f} {cell_center[2]:.6f}\n"
-        
+                break # Only need to define one cell per layer for testing
         geometry += "\n"
     
     return geometry
@@ -196,7 +269,7 @@ def create_honeycomb(station, wheel, sector, station_num, station_name, station_
     # Honeycomb dimensions: same width/length as station
     geometry += f"// Aluminum Honeycomb (between SL2 and SL1)\n"
     geometry += f":VOLU {honeycomb_name} BOX "
-    geometry += f"{station_bounds[0]/2:.6f} {station_bounds[2]/2:.6f} {honeycomb_thickness/2:.6f} G4_Al\n"
+    geometry += f"{station_bounds[0]/2 - 0.5:.6f} {station_bounds[2]/2 - 0.5:.6f} {honeycomb_thickness/2 - 0.5:.6f} G4_Al\n" # Subtract 0.5 cm margin
     
     # Position: midpoint between SL2 (top) and SL1 (bottom) in Z
     honeycomb_z = (sl2_z_max + sl1_z_min) / 2.0
