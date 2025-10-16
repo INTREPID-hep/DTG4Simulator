@@ -18,7 +18,8 @@ def generate_station_geometry_ascii(
     output_dir, 
     concentrator_template,
     concentrator_output,
-    include_yoke=False
+    include_yoke=False,
+    include_honeycomb=False
 ):
     """
     Generate Geant4 ASCII text geometry for multiple DT stations
@@ -30,6 +31,7 @@ def generate_station_geometry_ascii(
         concentrator_template: Path to concentrator template file
         concentrator_output: Output concentrator geometry file
         include_yoke: If True, add iron yoke blocks radially below each station
+        include_honeycomb: If True, add aluminum honeycomb layer between SL1 and SL2
     """
     
     # Create output directory if it doesn't exist
@@ -101,10 +103,7 @@ def generate_station_geometry_ascii(
         
         # Process all superlayers (1, 2, 3)
         # Place cells directly in station (no superlayer/layer volumes)
-        for sl in station.super_layers:
-            if sl.number not in [1, 2, 3]:
-                continue
-            
+        for sl in station.super_layers:    
             station_geometry += f"// SuperLayer {sl.number} - Cells\n"
             
             # Define drift cell solid for this superlayer (dimensions may vary between superlayers)
@@ -152,8 +151,44 @@ def generate_station_geometry_ascii(
                     # Place cell in station with appropriate rotation
                     station_geometry += f":PLACE {cell_name} 1 {station_name} {rotation_to_use} "
                     station_geometry += f"{cell_center[0]:.6f} {cell_center[1]:.6f} {cell_center[2]:.6f}\n"
-                    break # Only one cell to test
+                    #break # Only one cell to test
             station_geometry += "\n"
+        
+        # Add honeycomb layer between SL2 and SL1 if requested
+        # Note: Stacking order is SL3 (bottom) -> SL2 (middle) -> SL1 (top)
+        # Honeycomb goes in the gap between SL2 and SL1
+        if include_honeycomb:
+            honeycomb_name = f"Honeycomb_W{wheel}_Sec{sector}_St{station_num}"
+            
+            # Get superlayer objects to calculate actual gap
+            sl1 = [sl for sl in station.super_layers if sl.number == 1]
+            sl2 = [sl for sl in station.super_layers if sl.number == 2]
+            if not sl2:
+                sl2 = [sl for sl in station.super_layers if sl.number == 3]
+            sl1 = sl1[0]
+            sl2 = sl2[0]
+
+            # Calculate honeycomb thickness from actual gap between SL2 (top) and SL1 (bottom)
+            # Z coordinate is the height/stacking direction in local station frame
+            sl1_z_min = sl1.local_cords_at_min[2]  # Bottom of SL1
+            sl2_z_max = sl2.local_cords_at_min[2] + sl2.bounds[1]  # Top of SL2
+            honeycomb_thickness = sl1_z_min - sl2_z_max  # Gap between them (≈12.8 cm)
+            
+            # Honeycomb dimensions: same width/length as station
+            station_geometry += f"// Aluminum Honeycomb (between SL2 and SL1)\n"
+            station_geometry += f":VOLU {honeycomb_name} BOX {station_bounds[0]/2:.6f} {station_bounds[2]/2:.6f} {honeycomb_thickness/2:.6f} G4_Al\n"
+            
+            # Position: midpoint between SL2 (top) and SL1 (bottom) in Z
+            honeycomb_z = (sl2_z_max + sl1_z_min) / 2.0
+            
+            # Position: midpoint between SL2 (top) and SL1 (bottom) in Z
+            honeycomb_z = (sl2_z_max + sl1_z_min) / 2.0
+            
+            # Keep X and Y from station center (0, 0 in local frame)
+            honeycomb_pos = [0.0, 0.0, honeycomb_z]
+            
+            station_geometry += f":PLACE {honeycomb_name} 1 {station_name} R0 "
+            station_geometry += f"{honeycomb_pos[0]:.6f} {honeycomb_pos[1]:.6f} {honeycomb_pos[2]:.6f}\n\n"
         
         # Write this station's geometry to its own file
         with open(station_filepath, 'w') as f:
@@ -207,5 +242,6 @@ if __name__ == "__main__":
         output_dir='stations',
         concentrator_template='geometry_concentrator_template',
         concentrator_output='geometry_concentrator.tg',
-        include_yoke=True  # Set to True to include iron yokes
+        include_yoke=True,  # Set to True to include iron yokes
+        include_honeycomb=True  # Set to True to include aluminum honeycomb
     )

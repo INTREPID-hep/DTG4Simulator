@@ -37,5 +37,8 @@
 :COLOUR Yoke* 1.0 0.0 0.0 // Red
 //:CHECK_OVERLAPS Yoke* ON
 
+:VIS Honeycomb* ON
+:COLOUR Honeycomb* 0.0 1.0 0.0 // Green
+
 :VIS Cell* ON
 :COLOUR Cell* 1.0 1.0 0.0 // Yellow
