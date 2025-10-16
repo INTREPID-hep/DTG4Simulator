@@ -2,7 +2,7 @@
 // This file contains fixed definitions
 // Dynamic geometry is appended by generate_geometry_data.py
 
-#include geometry/materials.txt
+#include geometry/materials.tg
 
 // World volume - box with CMS dimensions
 :VOLU world BOX 800.*cm 800.*cm 750.*cm G4_Galactic
@@ -31,7 +31,11 @@
 {STATIONS}
 
 :VIS Station* ON
-:COLOUR Station* 0.0 0.0 0.1 0.4 // Blue
+:COLOUR Station* 0.0 0.0 1.0 // Blue
+
+:VIS Yoke* ON
+:COLOUR Yoke* 1.0 0.0 0.0 // Red
+//:CHECK_OVERLAPS Yoke* ON
 
 :VIS Cell* ON
-:COLOUR Cell* 1.0 1.0 0.0 0.8 // Yellow
+:COLOUR Cell* 1.0 1.0 0.0 // Yellow

@@ -17,7 +17,8 @@ def generate_station_geometry_ascii(
     stations_list,
     output_dir, 
     concentrator_template,
-    concentrator_output
+    concentrator_output,
+    include_yoke=False
 ):
     """
     Generate Geant4 ASCII text geometry for multiple DT stations
@@ -28,6 +29,7 @@ def generate_station_geometry_ascii(
         output_dir: Directory where individual station files will be saved
         concentrator_template: Path to concentrator template file
         concentrator_output: Output concentrator geometry file
+        include_yoke: If True, add iron yoke blocks radially below each station
     """
     
     # Create output directory if it doesn't exist
@@ -57,7 +59,7 @@ def generate_station_geometry_ascii(
         # Get station transformation
         station_transform = station.transformer.get_transformation(from_frame="Station", to_frame="CMS")
         station_rot = extract_rotation(station_transform)
-        station_trans = station.global_center
+        station_center = station.global_center
         
         # Create rotation matrix for station
         station_geometry += f":ROTM RM_Station_{wheel}_{sector}_{station_num} "
@@ -67,7 +69,35 @@ def generate_station_geometry_ascii(
         
         # Place station in world
         station_geometry += f":PLACE {station_name} 1 world RM_Station_{wheel}_{sector}_{station_num} "
-        station_geometry += f"{station_trans[0]:.6f} {station_trans[1]:.6f} {station_trans[2]:.6f}\n\n"
+        station_geometry += f"{station_center[0]:.6f} {station_center[1]:.6f} {station_center[2]:.6f}\n\n"
+        
+        # Add yoke if requested
+        if include_yoke:
+            yoke_name = f"Yoke_W{wheel}_Sec{sector}_St{station_num}"
+            # Yoke has same dimensions as station
+            station_geometry += f"// Iron Yoke (radially below station)\n"
+            station_geometry += f":VOLU {yoke_name} BOX {station_bounds[0]/2:.6f} {station_bounds[2]/2:.6f} {station_bounds[1]/2:.6f} G4_Fe\n"
+            
+            # Calculate yoke position: radially inward from station
+            # Direction vector from origin (0,0,0) to station center in XY plane only
+            station_pos_xy = np.array([station_center[0], station_center[1], 0.0])
+            radial_distance_xy = np.linalg.norm(station_pos_xy)
+            
+            # Unit vector pointing radially outward in XY plane
+            radial_unit_xy = station_pos_xy / radial_distance_xy
+            
+            # Yoke thickness (same as station height)
+            yoke_thickness = station_bounds[1]  # height dimension
+            
+            # Yoke center: move inward in XY plane by station_height/2 + yoke_height/2
+            # Keep same Z coordinate as station
+            offset = (station_bounds[1]/2 + yoke_thickness/2)
+            yoke_pos_xy = station_pos_xy - radial_unit_xy * offset
+            yoke_pos = np.array([yoke_pos_xy[0], yoke_pos_xy[1], station_center[2]])
+            
+            # Yoke uses same rotation as station
+            station_geometry += f":PLACE {yoke_name} 1 world RM_Station_{wheel}_{sector}_{station_num} "
+            station_geometry += f"{yoke_pos[0]:.6f} {yoke_pos[1]:.6f} {yoke_pos[2]:.6f}\n\n"
         
         # Process all superlayers (1, 2, 3)
         # Place cells directly in station (no superlayer/layer volumes)
@@ -162,8 +192,8 @@ def generate_station_geometry_ascii(
 if __name__ == "__main__":
     # Define stations to include (wheel, sector, station)
     stations_to_generate = [
-        (-1, 2, 2),  # MB2
         (-1, 2, 1),  # MB1
+        (-1, 2, 2),  # MB2
         (-1, 2, 3),  # MB3
         (-1, 2, 4),  # MB4
     ]
@@ -176,5 +206,6 @@ if __name__ == "__main__":
         stations_list=stations_to_generate,
         output_dir='stations',
         concentrator_template='geometry_concentrator_template',
-        concentrator_output='geometry_concentrator.tg'
+        concentrator_output='geometry_concentrator.tg',
+        include_yoke=True  # Set to True to include iron yokes
     )
