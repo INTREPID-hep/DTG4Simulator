@@ -27,22 +27,18 @@ DetectorConstruction::~DetectorConstruction()
 
 G4VPhysicalVolume* DetectorConstruction::Construct()
 {
-    // Read materials from text file
-    G4String materialsFile = "geometry/materials.tg";
     fMessenger->SetVerboseLevel(1);
-    
     G4tgbVolumeMgr* volMgr = G4tgbVolumeMgr::GetInstance();
-    volMgr->AddTextFile(materialsFile);
-    
+
     // Read geometry from text file
-    G4String geometryFile = "geometry/dt_geometry.txt";
+    G4String geometryFile = "geometry/geometry_concentrator.tg";
     volMgr->AddTextFile(geometryFile);
     
     // Construct the geometry
     const G4VPhysicalVolume* worldPhys = volMgr->ReadAndConstructDetector();
     
     // Set visualization attributes
-    SetVisualizationAttributes();
+    // SetVisualizationAttributes();
     
     return const_cast<G4VPhysicalVolume*>(worldPhys);
 }
@@ -73,15 +69,15 @@ void DetectorConstruction::SetVisualizationAttributes()
     // DT Frame - semi-transparent blue
     G4LogicalVolume* frameLV = logVolStore->GetVolume("DTFrame");
     if (frameLV) {
-        auto frameVis = new G4VisAttributes(G4Colour(0.0, 0.0, 1.0, 0.5));
-        frameVis->SetForceSolid(false);
+        auto frameVis = new G4VisAttributes(G4Colour(0.0, 0.0, 1.0, 0.4));
+        frameVis->SetForceSolid(true);
         frameLV->SetVisAttributes(frameVis);
     }
     
     // Drift cells - yellow
     G4LogicalVolume* cellLV = logVolStore->GetVolume("DriftCell");
     if (cellLV) {
-        auto cellVis = new G4VisAttributes(G4Colour(1.0, 1.0, 0.0, 0.7));
+        auto cellVis = new G4VisAttributes(G4Colour(1.0, 1.0, 0.0, 0.8));
         cellVis->SetForceSolid(true);
         cellLV->SetVisAttributes(cellVis);
     }

@@ -31,7 +31,7 @@ file(GLOB sources ${PROJECT_SOURCE_DIR}/src/*.cc)
 file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
 
 file(GLOB MACRO_FILES "macros/*.mac")
-file(GLOB GEOMETRY_FILES "geometry/*.tg")
+file(GLOB GEOMETRY_FILES "geometry/*")
 #----------------------------------------------------------------------------
 # Copy all scripts to the build directory, i.e. the directory in which we
 # build DTSim. This is so that we can run the executable directly because it
