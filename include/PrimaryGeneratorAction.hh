@@ -55,7 +55,7 @@ class PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
     G4ParticleDefinition* fProton = nullptr;
     G4double fMomentum = 1000. * CLHEP::MeV;
     G4double fSigmaMomentum = 50. * CLHEP::MeV;
-    G4double fSigmaAngle = 2. * CLHEP::deg;
+    G4double fSigmaAngle = 10. * CLHEP::deg;
     G4bool fRandomizePrimary = true;
 };
 

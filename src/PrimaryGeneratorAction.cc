@@ -26,7 +26,7 @@ PrimaryGeneratorAction::PrimaryGeneratorAction()
   fProton = particleTable->FindParticle("proton");
 
   // default particle kinematics
-  fParticleGun->SetParticlePosition(G4ThreeVector(0.,0.,-5.*m)); // <---change this latter
+  fParticleGun->SetParticlePosition(G4ThreeVector(0.,0.,-25*cm));
   fParticleGun->SetParticleDefinition(fMuon);
 
   // define commands for this class
@@ -76,7 +76,7 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* event)
 
   auto angle = (G4UniformRand()-0.5)*fSigmaAngle;
   fParticleGun->SetParticleMomentumDirection(
-                  G4ThreeVector(std::sin(angle),0.,std::cos(angle)));
+                  G4ThreeVector(std::cos(angle), std::sin(angle), 0.));
 
   fParticleGun->GeneratePrimaryVertex(event);
 }

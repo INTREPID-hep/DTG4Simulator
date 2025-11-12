@@ -397,10 +397,18 @@ def _create_concentrator_file(station_files, template_path, output_path, station
 if __name__ == "__main__":
     # Define stations to include (wheel, sector, station)
     stations_to_generate = [
+        (-1, 1, 1),  # MB1
+        (-1, 1, 2),  # MB2
+        (-1, 1, 3),  # MB3
+        (-1, 1, 4),  # MB4
         (-1, 2, 1),  # MB1
         (-1, 2, 2),  # MB2
         (-1, 2, 3),  # MB3
         (-1, 2, 4),  # MB4
+        (-1, 3, 1),  # MB1
+        (-1, 3, 2),  # MB2
+        (-1, 3, 3),  # MB3
+        (-1, 3, 4),  # MB4
     ]
     
     print("Generating DT geometry files...")

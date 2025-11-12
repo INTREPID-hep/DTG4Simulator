@@ -28,10 +28,18 @@
 // ============================================================================
 // Station geometries below (generated dynamically)
 // ============================================================================
+#include geometry/stations/station_W-1_Sec1_St1.tg
+#include geometry/stations/station_W-1_Sec1_St2.tg
+#include geometry/stations/station_W-1_Sec1_St3.tg
+#include geometry/stations/station_W-1_Sec1_St4.tg
 #include geometry/stations/station_W-1_Sec2_St1.tg
 #include geometry/stations/station_W-1_Sec2_St2.tg
 #include geometry/stations/station_W-1_Sec2_St3.tg
 #include geometry/stations/station_W-1_Sec2_St4.tg
+#include geometry/stations/station_W-1_Sec3_St1.tg
+#include geometry/stations/station_W-1_Sec3_St2.tg
+#include geometry/stations/station_W-1_Sec3_St3.tg
+#include geometry/stations/station_W-1_Sec3_St4.tg
 
 :VIS Station* ON
 :COLOUR Station* 0.0 0.0 1.0 // Blue
