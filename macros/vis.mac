@@ -8,7 +8,7 @@
 # Specify zoom value:
 /vis/viewer/zoom 1.6
 # Specify style (surface or wireframe):
-/vis/viewer/set/style surface
+/vis/viewer/set/style wireframe #surface
 
 # Disable auto refresh and quieten vis messages whilst scene and trajectories are established:
 /vis/viewer/set/autoRefresh false

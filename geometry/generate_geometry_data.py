@@ -97,7 +97,7 @@ def create_station_volume(station, wheel, sector, station_num):
     station_bounds = station.bounds
     station_name = f"Station_W{wheel}_Sec{sector}_St{station_num}"
     
-    # Define station volume (BOX: half-widths in X, Y, Z)
+    # Define station volume (BOX: half-widths in X, Y, Z) - merged syntax
     geometry += f":VOLU {station_name} BOX "
     geometry += f"{station_bounds[0]/2:.6f} {station_bounds[2]/2:.6f} {station_bounds[1]/2:.6f} G4_AIR\n"
     
@@ -144,7 +144,7 @@ def create_yoke(station, wheel, sector, station_num, station_bounds):
     # Get yoke thickness for this station type (gap to next station)
     yoke_thickness = YOKE_THICKNESS.get(station_num, 40.0)  # Default if not found
     
-    # Yoke dimensions: same width and length as station, thickness fills radial gap
+    # Yoke volume: merged solid+volume syntax
     geometry += f"// Iron Yoke (radially inward, thickness={yoke_thickness:.2f} cm)\n"
     geometry += f":VOLU {yoke_name} BOX "
     geometry += f"{station_bounds[0]/2:.6f} {station_bounds[2]/2:.6f} {yoke_thickness/2:.6f} G4_Fe\n"
@@ -169,6 +169,7 @@ def create_yoke(station, wheel, sector, station_num, station_bounds):
 def create_superlayer_cells(station, wheel, sector, station_num, station_name):
     """
     Create all drift cells for all superlayers in the station.
+    Defines ONE logical volume per superlayer and places multiple copies.
     
     Args:
         station: Station object from mplDTs
@@ -181,18 +182,19 @@ def create_superlayer_cells(station, wheel, sector, station_num, station_name):
     geometry = ""
     
     for sl in station.super_layers:
-        geometry += f"// SuperLayer {sl.number} - Cells\n"
+        geometry += f"// SuperLayer {sl.number} - Drift Cell Volume\n"
         
-        # Define drift cell solid for this superlayer
+        # Define ONE drift cell volume for this superlayer (merged syntax)
         first_cell = None
         if len(sl.layers) > 0 and len(sl.layers[0].cells) > 0:
             first_cell = sl.layers[0].cells[0]
         
-        cell_solid_name = f"DriftCellSolid_W{wheel}_Sec{sector}_St{station_num}_SL{sl.number}"
+        cell_volume_name = f"DriftCell_W{wheel}_Sec{sector}_St{station_num}_SL{sl.number}"
+        
         if first_cell:
             cell_bounds = first_cell.bounds
-            geometry += f":SOLID {cell_solid_name} BOX "
-            geometry += f"{cell_bounds[0]/2:.6f} {cell_bounds[2]/2:.6f} {cell_bounds[1]/2:.6f}\n"
+            geometry += f":VOLU {cell_volume_name} BOX "
+            geometry += f"{cell_bounds[0]/2:.6f} {cell_bounds[2]/2:.6f} {cell_bounds[1]/2:.6f} GasMixture\n\n"
         
         # SL2 needs its own rotation matrix (rotated 90° in Z)
         if sl.number == 2:
@@ -211,23 +213,20 @@ def create_superlayer_cells(station, wheel, sector, station_num, station_name):
             rotation_to_use = "R0"
             sl_transform = None
         
-        # Place all cells in all layers
+        # Place multiple copies of the same logical volume for all cells
+        geometry += f"// Placing {sum(len(layer.cells) for layer in sl.layers)} cells\n"
+        copy_number = 1
         for layer in sl.layers:
             for cell in layer.cells:
-                cell_name = f"Cell_W{wheel}_Sec{sector}_St{station_num}_SL{sl.number}_L{layer.number}_C{cell.number}"
-                
-                # Define volume using the superlayer-specific solid
-                geometry += f":VOLU {cell_name} {cell_solid_name} GasMixture\n"
-                
                 # Get cell position relative to station
                 cell_center = cell.local_center
                 if sl.number == 2 and sl_transform is not None:
                     cell_center = np.dot(sl_transform[:3, :3], cell.local_center)
                 
-                # Place cell in station
-                geometry += f":PLACE {cell_name} 1 {station_name} {rotation_to_use} "
+                # Place copy of the cell volume in station
+                geometry += f":PLACE {cell_volume_name} {copy_number} {station_name} {rotation_to_use} "
                 geometry += f"{cell_center[0]:.6f} {cell_center[1]:.6f} {cell_center[2]:.6f}\n"
-                break # Only need to define one cell per layer for testing
+                copy_number += 1
         geometry += "\n"
     
     return geometry
@@ -266,10 +265,10 @@ def create_honeycomb(station, wheel, sector, station_num, station_name, station_
     sl2_z_max = sl2.local_cords_at_min[2] + sl2.bounds[1]  # Top of SL2
     honeycomb_thickness = sl1_z_min - sl2_z_max  # Gap between them (~12.8 cm)
     
-    # Honeycomb dimensions: same width/length as station
+    # Honeycomb volume: merged syntax
     geometry += f"// Aluminum Honeycomb (between SL2 and SL1)\n"
     geometry += f":VOLU {honeycomb_name} BOX "
-    geometry += f"{station_bounds[0]/2 - 0.5:.6f} {station_bounds[2]/2 - 0.5:.6f} {honeycomb_thickness/2 - 0.5:.6f} G4_Al\n" # Subtract 0.5 cm margin
+    geometry += f"{station_bounds[0]/2 - 0.5:.6f} {station_bounds[2]/2 - 0.5:.6f} {honeycomb_thickness/2 - 0.5:.6f} G4_Al\n"
     
     # Position: midpoint between SL2 (top) and SL1 (bottom) in Z
     honeycomb_z = (sl2_z_max + sl1_z_min) / 2.0
