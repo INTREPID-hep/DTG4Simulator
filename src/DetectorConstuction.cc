@@ -8,9 +8,12 @@
 #include "G4VisAttributes.hh"
 #include "G4Colour.hh"
 #include "G4tgbVolumeMgr.hh"
+#include "G4tgrVolume.hh"
 #include "G4tgrMessenger.hh"
 #include "G4LogicalVolumeStore.hh"
-
+#include "G4String.hh"
+#include "G4SDManager.hh"
+#include "DriftCellSD.hh"
 
 namespace DTSim
 {
@@ -36,11 +39,33 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     
     // Construct the geometry
     const G4VPhysicalVolume* worldPhys = volMgr->ReadAndConstructDetector();
+
+    // Find all DriftCell logical volumes: Necessary for setting sensitive volumes
+    auto logVolStore = G4LogicalVolumeStore::GetInstance();
+    driftCellsLogicals.clear();
     
+    for (auto* logVol : *logVolStore) {
+        G4String name = logVol->GetName();
+        if (G4StrUtil::contains(name, "DriftCell")) {
+            driftCellsLogicals.push_back(logVol);
+        }
+    }
+
     // Set visualization attributes
     // SetVisualizationAttributes();
     
     return const_cast<G4VPhysicalVolume*>(worldPhys);
+}
+
+void DetectorConstruction::ConstructSDandField()
+{
+    DTSim::DriftCellSD* driftCellSD = new DTSim::DriftCellSD("/DriftCellSD");
+    auto sdManager = G4SDManager::GetSDMpointer();
+    sdManager->AddNewDetector(driftCellSD);
+    
+    for (auto* logVol : driftCellsLogicals) {
+        logVol->SetSensitiveDetector(driftCellSD);
+    }
 }
 
 
@@ -69,15 +94,15 @@ void DetectorConstruction::SetVisualizationAttributes()
     // DT Frame - semi-transparent blue
     G4LogicalVolume* frameLV = logVolStore->GetVolume("DTFrame");
     if (frameLV) {
-        auto frameVis = new G4VisAttributes(G4Colour(0.0, 0.0, 1.0, 0.4));
-        frameVis->SetForceSolid(true);
+        auto frameVis = new G4VisAttributes(G4Colour(0.0, 0.0, 1.0, 0.5));
+        frameVis->SetForceSolid(false);
         frameLV->SetVisAttributes(frameVis);
     }
     
     // Drift cells - yellow
     G4LogicalVolume* cellLV = logVolStore->GetVolume("DriftCell");
     if (cellLV) {
-        auto cellVis = new G4VisAttributes(G4Colour(1.0, 1.0, 0.0, 0.8));
+        auto cellVis = new G4VisAttributes(G4Colour(1.0, 1.0, 0.0, 0.7));
         cellVis->SetForceSolid(true);
         cellLV->SetVisAttributes(cellVis);
     }

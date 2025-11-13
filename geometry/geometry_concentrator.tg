@@ -28,11 +28,11 @@
 // ============================================================================
 // Station geometries below (generated dynamically)
 // ============================================================================
-// #include geometry/stations/station_W-1_Sec1_St1.tg
+#include geometry/stations/station_W-1_Sec1_St1.tg
 // #include geometry/stations/station_W-1_Sec1_St2.tg
 // #include geometry/stations/station_W-1_Sec1_St3.tg
 // #include geometry/stations/station_W-1_Sec1_St4.tg
-#include geometry/stations/station_W-1_Sec2_St1.tg
+// #include geometry/stations/station_W-1_Sec2_St1.tg
 // #include geometry/stations/station_W-1_Sec2_St2.tg
 // #include geometry/stations/station_W-1_Sec2_St3.tg
 // #include geometry/stations/station_W-1_Sec2_St4.tg
@@ -42,17 +42,17 @@
 // #include geometry/stations/station_W-1_Sec3_St4.tg
 
 :VIS Station* ON
-:COLOUR Station* 0.0 0.0 1.0 0.3 // Blue
+:COLOUR Station* 0.0 0.0 1.0 0.2 // Blue
 :CHECK_OVERLAPS Station* ON
 
 :VIS Yoke* ON
-:COLOUR Yoke* 1.0 0.0 0.0 0.3 // Red
+:COLOUR Yoke* 1.0 0.0 0.0 0.2 // Red
 //:CHECK_OVERLAPS Yoke* ON
 
 :VIS Honeycomb* ON
-:COLOUR Honeycomb* 0.0 1.0 0.0 0.3 // Green
+:COLOUR Honeycomb* 0.0 1.0 0.0 0.2// Green
 :CHECK_OVERLAPS Honeycomb* ON
 
 :VIS DriftCell* ON
-:COLOUR DriftCell* 1.0 1.0 1.0 0.5 // White
+:COLOUR DriftCell* 1.0 1.0 1.0 0.2 // White
 :CHECK_OVERLAPS DriftCell* ON

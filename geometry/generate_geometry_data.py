@@ -170,6 +170,7 @@ def create_superlayer_cells(station, wheel, sector, station_num, station_name):
     """
     Create all drift cells for all superlayers in the station.
     Defines ONE logical volume per superlayer and places multiple copies.
+    Volume name encodes cells-per-layer information.
     
     Args:
         station: Station object from mplDTs
@@ -177,19 +178,26 @@ def create_superlayer_cells(station, wheel, sector, station_num, station_name):
         station_name: Name of the station volume
         
     Returns:
-        String with cell solid definitions and placements
+        String with cell volume definitions and placements
     """
     geometry = ""
     
     for sl in station.super_layers:
         geometry += f"// SuperLayer {sl.number} - Drift Cell Volume\n"
         
-        # Define ONE drift cell volume for this superlayer (merged syntax)
+        # Count cells per layer to encode in volume name
+        cells_per_layer = [len(layer.cells) for layer in sl.layers]
+        
+        # Format: up to 2 digits per layer count (pad with leading zero if needed)
+        # E.g., [60, 60, 59, 59] -> "60605959"
+        layer_encoding = "".join([f"{count:02d}" for count in cells_per_layer])
+        
+        # Define ONE drift cell volume for this superlayer with encoded name
         first_cell = None
         if len(sl.layers) > 0 and len(sl.layers[0].cells) > 0:
             first_cell = sl.layers[0].cells[0]
         
-        cell_volume_name = f"DriftCell_W{wheel}_Sec{sector}_St{station_num}_SL{sl.number}"
+        cell_volume_name = f"DriftCell_W{wheel}_Sec{sector}_St{station_num}_SL{sl.number}_{layer_encoding}"
         
         if first_cell:
             cell_bounds = first_cell.bounds
@@ -214,7 +222,7 @@ def create_superlayer_cells(station, wheel, sector, station_num, station_name):
             sl_transform = None
         
         # Place multiple copies of the same logical volume for all cells
-        geometry += f"// Placing {sum(len(layer.cells) for layer in sl.layers)} cells\n"
+        geometry += f"// Placing {sum(cells_per_layer)} cells ({' '.join([str(c) for c in cells_per_layer])} per layer)\n"
         copy_number = 1
         for layer in sl.layers:
             for cell in layer.cells:
