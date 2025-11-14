@@ -1,6 +1,6 @@
 #include "RunAction.hh"
+#include "G4Run.hh"
 #include "G4AnalysisManager.hh"
-// #include "g4root.hh"
 
 namespace DTSim
 {

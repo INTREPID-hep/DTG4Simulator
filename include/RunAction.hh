@@ -2,7 +2,8 @@
 #define RunAction_hh
 
 #include "G4UserRunAction.hh"
-#include "G4Run.hh"
+
+class G4Run;
 
 namespace DTSim
 {

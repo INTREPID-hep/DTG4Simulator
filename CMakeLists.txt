@@ -25,25 +25,28 @@ include(${Geant4_USE_FILE})
 # Locate sources and headers for this project
 # NB: headers are included so they will show up in IDEs
 #
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
+include_directories(${PROJECT_SOURCE_DIR}/include
                     ${Geant4_INCLUDE_DIR})
 file(GLOB sources ${PROJECT_SOURCE_DIR}/src/*.cc)
 file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
 
-file(GLOB MACRO_FILES "macros/*.mac")
-file(GLOB GEOMETRY_FILES "geometry/*")
 #----------------------------------------------------------------------------
-# Copy all scripts to the build directory, i.e. the directory in which we
-# build DTSim. This is so that we can run the executable directly because it
-# relies on these scripts being in the current working directory.
+# Copy all macro scripts and geometry files to the build directory
+
+# Copy only .mac files from macros directory
+file(GLOB MACRO_FILES "${PROJECT_SOURCE_DIR}/macros/*.mac")
 file(COPY ${MACRO_FILES} DESTINATION ${CMAKE_BINARY_DIR}/)
 
-#----------------------------------------------------------------------------
-# Copy geometry files to the build directory
-#
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/geometry)
-  file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/geometry DESTINATION ${CMAKE_BINARY_DIR}/)
-endif()
+# Copy geometry directory preserving structure, excluding unwanted files
+file(
+  COPY ${PROJECT_SOURCE_DIR}/geometry/ 
+  DESTINATION ${CMAKE_BINARY_DIR}/geometry
+  PATTERN "*.py" EXCLUDE
+  PATTERN "*.pyc" EXCLUDE
+  PATTERN "*template*" EXCLUDE
+  PATTERN "*test*" EXCLUDE
+  PATTERN "__pycache__" EXCLUDE
+)
 
 #----------------------------------------------------------------------------
 # Add the executable, and link it to the Geant4 libraries

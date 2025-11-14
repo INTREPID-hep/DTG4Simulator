@@ -25,9 +25,6 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 
   private:
     std::vector<G4LogicalVolume*> driftCellsLogicals;
-
-    void SetVisualizationAttributes();
-    
     G4tgrMessenger* fMessenger;
 };
 

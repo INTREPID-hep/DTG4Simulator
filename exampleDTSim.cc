@@ -83,7 +83,7 @@ int main(int argc,char** argv)
     UImanager->ApplyCommand(command+fileName);
   }
   else {
-    UImanager->ApplyCommand("/control/execute init_vis.mac");
+    UImanager->ApplyCommand("/control/execute vis.mac");
     // if (ui->IsGUI()) {
     //      UImanager->ApplyCommand("/control/execute gui.mac");
     // }
