@@ -1,4 +1,6 @@
 #include "DriftCellSD.hh"
+#include "G4AnalysisManager.hh"
+#include "G4RunManager.hh"
 #include <sstream>
 
 namespace DTSim
@@ -40,97 +42,163 @@ G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
     auto worldPos = preStepPoint->GetPosition();
     auto localPos = touchable->GetHistory()->GetTopTransform().TransformPoint(worldPos);
 
-    // Get position with respect of the center of the cell:
+    // Get position with respect to the center of the cell:
     G4ThreeVector origin(0., 0., 0.);
     auto detectorCenter = touchable->GetHistory()->GetTopTransform().Inverse().TransformPoint(origin);
     auto hitOffset = worldPos - detectorCenter;
 
     auto timeDrift = GetTimeWithDrift(preStepPoint->GetGlobalTime(), hitOffset);
     
-    // Extract layer structure from volume Name
-    ExtractLayerStructure(volumeName);
+    // Decode complete cell identification in one call
+    CellID cellID = DecodeCellID(volumeName, copyNo);
     
-    // Decode both IDs
-    G4int layerID = -1;
-    G4int cellID = -1;
-    DecodeCopyNumber(copyNo, layerID, cellID);
+    // Check if decoding was successful
+    if (!cellID.isValid()) {
+        G4cerr << "Warning: Failed to decode cell ID for volume " << volumeName 
+               << " copy " << copyNo << G4endl;
+        return false;
+    }
+    
+    G4int evt = G4RunManager::GetRunManager()->GetCurrentEvent()->GetEventID();
 
-    G4cout << "DriftCellSD Hit: "
+    // Pretty print using the << operator
+    G4cout << "DriftCellSD Hit in Event " << evt << ": "
             << " PDG=" << pdgID
             << " q=" << charge
-            << " CopyNo=" << copyNo
-            << " LayerID=" << layerID
-            << " CellID=" << cellID
+            << " CellID=" << cellID  // ← Uses the overloaded << operator!
             << " LocalPos=" << localPos
             << " TimeWithDrift=" << timeDrift
             << G4endl;
 
+    // Fill ntuple with all information
+    G4AnalysisManager *analysisManager = G4AnalysisManager::Instance();
+    
+    analysisManager->FillNtupleIColumn(0, 0, evt);
+    analysisManager->FillNtupleIColumn(0, 1, pdgID);
+    analysisManager->FillNtupleIColumn(0, 2, charge);
+    analysisManager->FillNtupleIColumn(0, 3, cellID.wheel);
+    analysisManager->FillNtupleIColumn(0, 4, cellID.sector);
+    analysisManager->FillNtupleIColumn(0, 5, cellID.station);
+    analysisManager->FillNtupleIColumn(0, 6, cellID.superLayer);
+    analysisManager->FillNtupleIColumn(0, 7, cellID.layer);
+    analysisManager->FillNtupleIColumn(0, 8, cellID.wire);
+    analysisManager->FillNtupleDColumn(0, 9, localPos.x());
+    analysisManager->FillNtupleDColumn(0, 10, localPos.y());
+    analysisManager->FillNtupleDColumn(0, 11, localPos.z());
+    analysisManager->FillNtupleDColumn(0, 12, timeDrift);
+    
+    analysisManager->AddNtupleRow(0);
+
     return true;
 }
 
-void DriftCellSD::ExtractLayerStructure(const G4String& volumeName) const
+CellID DriftCellSD::DecodeCellID(const G4String& volumeName, G4int copyNo) const
 {
-    // Check if we already have the structure for this volume 
-    if (fVolumeName == volumeName && !fCellsPerLayer.empty()) {
-        return; // Already cached
-    }
+    CellID cellID;
     
     // Volume name format: DriftCell_W{wheel}_Sec{sector}_St{station}_SL{sl}_{encoding}
-    // Encoding format: 2 digits per layer (e.g., "60605959" = [60, 60, 59, 59])
+    // Example: DriftCell_W-1_Sec1_St2_SL1_60605959
     
-    fCellsPerLayer.clear();
-    fVolumeName = volumeName;
+    size_t pos = 0;
     
+    // Extract wheel
+    pos = volumeName.find("_W");
+    if (pos != std::string::npos) {
+        pos += 2;  // Skip "_W"
+        size_t endPos = volumeName.find("_", pos);
+        G4String wheelStr = volumeName.substr(pos, endPos - pos);
+        cellID.wheel = std::stoi(wheelStr);
+        pos = endPos;
+    } else {
+        G4cerr << "Warning: Could not parse wheel from " << volumeName << G4endl;
+        return cellID;
+    }
+    
+    // Extract sector
+    pos = volumeName.find("_Sec", pos);
+    if (pos != std::string::npos) {
+        pos += 4;  // Skip "_Sec"
+        size_t endPos = volumeName.find("_", pos);
+        G4String sectorStr = volumeName.substr(pos, endPos - pos);
+        cellID.sector = std::stoi(sectorStr);
+        pos = endPos;
+    } else {
+        G4cerr << "Warning: Could not parse sector from " << volumeName << G4endl;
+        return cellID;
+    }
+    
+    // Extract station
+    pos = volumeName.find("_St", pos);
+    if (pos != std::string::npos) {
+        pos += 3;  // Skip "_St"
+        size_t endPos = volumeName.find("_", pos);
+        G4String stationStr = volumeName.substr(pos, endPos - pos);
+        cellID.station = std::stoi(stationStr);
+        pos = endPos;
+    } else {
+        G4cerr << "Warning: Could not parse station from " << volumeName << G4endl;
+        return cellID;
+    }
+    
+    // Extract superlayer
+    pos = volumeName.find("_SL", pos);
+    if (pos != std::string::npos) {
+        pos += 3;  // Skip "_SL"
+        size_t endPos = volumeName.find("_", pos);
+        G4String slStr = volumeName.substr(pos, endPos - pos);
+        cellID.superLayer = std::stoi(slStr);
+        pos = endPos;
+    } else {
+        G4cerr << "Warning: Could not parse superlayer from " << volumeName << G4endl;
+        return cellID;
+    }
+    
+    // Extract cells-per-layer encoding from volume name
     // Find the last underscore to get the encoding part
     size_t lastUnderscore = volumeName.rfind('_');
     if (lastUnderscore == std::string::npos) {
-        G4cerr << "Warning: Could not parse volume name: " << volumeName << G4endl;
-        return;
+        G4cerr << "Warning: Could not find encoding in " << volumeName << G4endl;
+        return cellID;
     }
     
     G4String encoding = volumeName.substr(lastUnderscore + 1);
     
     // Parse encoding: each 2 characters = one layer count
+    std::vector<G4int> cellsPerLayer;
     for (size_t i = 0; i < encoding.length(); i += 2) {
         if (i + 1 < encoding.length()) {
             G4String countStr = encoding.substr(i, 2);
             G4int count = std::stoi(countStr);
-            fCellsPerLayer.push_back(count);
+            cellsPerLayer.push_back(count);
         }
     }
-}
-
-void DriftCellSD::DecodeCopyNumber(G4int copyNo, G4int& layerID, G4int& cellID) const
-{
-    // Initialize to invalid values
-    layerID = -1;
-    cellID = -1;
     
-    if (fCellsPerLayer.empty()) {
-        G4cerr << "Warning: Empty cached layer structure" << G4endl;
-        return;
+    if (cellsPerLayer.empty()) {
+        G4cerr << "Warning: Empty layer structure from encoding " << encoding << G4endl;
+        return cellID;
     }
     
-    // Find which layer this copyNo belongs to and the cell within that layer
+    // Decode layer and wire from copy number
     G4int cumulativeCells = 0;
-    for (size_t layerIdx = 0; layerIdx < fCellsPerLayer.size(); ++layerIdx) {
+    for (size_t layerIdx = 0; layerIdx < cellsPerLayer.size(); ++layerIdx) {
         G4int layerStartCopy = cumulativeCells + 1;
-        cumulativeCells += fCellsPerLayer[layerIdx];
+        cumulativeCells += cellsPerLayer[layerIdx];
         
         if (copyNo <= cumulativeCells) {
-            layerID = layerIdx + 1;  // Layer IDs start from 1
-            cellID = copyNo - layerStartCopy + 1;  // Cell ID within layer (1-indexed)
-            return;  // Found it, exit early
+            cellID.layer = layerIdx + 1;  // Layer IDs start from 1
+            cellID.wire = copyNo - layerStartCopy + 1;  // Wire ID within layer (1-indexed)
+            return cellID;  // Success!
         }
     }
     
     // If we reach here, copyNo was out of range
-    G4cerr << "Warning: CopyNo " << copyNo << " out of range" << G4endl;
+    G4cerr << "Warning: CopyNo " << copyNo << " out of range for " << volumeName << G4endl;
+    return cellID;
 }
 
 G4double DriftCellSD::GetTimeWithDrift(G4double time, G4ThreeVector distance) const
 { 
-    return time + abs(distance.x()) / kDriftVelocity; //This is in the correct units  (ns)
+    return time + abs(distance.x()) / kDriftVelocity;
 }
 
 }
