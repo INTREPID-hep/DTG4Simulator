@@ -56,7 +56,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
 void DetectorConstruction::ConstructSDandField()
 {
-    DTSim::DriftCellSD* driftCellSD = new DTSim::DriftCellSD("/DriftCellSD");
+    DTSim::DriftCellSD* driftCellSD = new DTSim::DriftCellSD("/DriftCellSD", "DriftCellHitsCollection");
     auto sdManager = G4SDManager::GetSDMpointer();
     sdManager->AddNewDetector(driftCellSD);
     

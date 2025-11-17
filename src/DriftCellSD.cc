@@ -1,36 +1,42 @@
 #include "DriftCellSD.hh"
 #include "G4AnalysisManager.hh"
 #include "G4RunManager.hh"
+#include "G4HCofThisEvent.hh"
+#include "G4Step.hh"
+#include "G4SDManager.hh"
 #include <sstream>
 
 namespace DTSim
 {
 
-DriftCellSD::DriftCellSD(const G4String& name)
+DriftCellSD::DriftCellSD(const G4String& name, const G4String& hitsCollectionName)
   : G4VSensitiveDetector(name)
 {
-}
-
-DriftCellSD::~DriftCellSD()
-{
+    collectionName.insert(hitsCollectionName);
 }
 
 void DriftCellSD::Initialize(G4HCofThisEvent* hce)
 {
-    // Implement initialization logic here
-}
+    // Create hits collection
+    fHitsCollection = new DriftCellHitsCollection(SensitiveDetectorName, collectionName[0]);
 
-void DriftCellSD::EndOfEvent(G4HCofThisEvent* hce)
-{
-    // Implement end-of-event logic here
+    // Add this collection in hce
+    G4int hcID = G4SDManager::GetSDMpointer()->GetCollectionID(collectionName[0]);
+    hce->AddHitsCollection(hcID, fHitsCollection);
 }
 
 G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
 {
+    // Get particle properties
     auto charge = step->GetTrack()->GetDefinition()->GetPDGCharge();
     auto pdgID  = step->GetTrack()->GetDefinition()->GetPDGEncoding();
 
-    if (charge==0.) return true;
+    // // Only process charged particles
+    // if (charge == 0.) return true;
+
+    // Get energy deposit - don't create hit if no energy deposited
+    G4double edep = step->GetTotalEnergyDeposit();
+    if (edep == 0.) return true;
 
     auto preStepPoint = step->GetPreStepPoint();
 
@@ -61,33 +67,21 @@ G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
     
     G4int evt = G4RunManager::GetRunManager()->GetCurrentEvent()->GetEventID();
 
-    // Pretty print using the << operator
-    G4cout << "DriftCellSD Hit in Event " << evt << ": "
-            << " PDG=" << pdgID
-            << " q=" << charge
-            << " CellID=" << cellID  // ← Uses the overloaded << operator!
-            << " LocalPos=" << localPos
-            << " TimeWithDrift=" << timeDrift
-            << G4endl;
+    // Create a new hit and fill it
+    DriftCellHit* hit = new DriftCellHit();
+    hit->SetEventID(evt);
+    hit->SetPDG(pdgID);
+    hit->SetCharge(charge);
+    hit->SetCellID(cellID);
+    hit->SetLocalPos(localPos);
+    hit->SetTimeDrift(timeDrift);
+    hit->SetEnergyDeposit(edep);  // ← Add this if you want to store it
 
-    // Fill ntuple with all information
-    G4AnalysisManager *analysisManager = G4AnalysisManager::Instance();
-    
-    analysisManager->FillNtupleIColumn(0, 0, evt);
-    analysisManager->FillNtupleIColumn(0, 1, pdgID);
-    analysisManager->FillNtupleIColumn(0, 2, charge);
-    analysisManager->FillNtupleIColumn(0, 3, cellID.wheel);
-    analysisManager->FillNtupleIColumn(0, 4, cellID.sector);
-    analysisManager->FillNtupleIColumn(0, 5, cellID.station);
-    analysisManager->FillNtupleIColumn(0, 6, cellID.superLayer);
-    analysisManager->FillNtupleIColumn(0, 7, cellID.layer);
-    analysisManager->FillNtupleIColumn(0, 8, cellID.wire);
-    analysisManager->FillNtupleDColumn(0, 9, localPos.x());
-    analysisManager->FillNtupleDColumn(0, 10, localPos.y());
-    analysisManager->FillNtupleDColumn(0, 11, localPos.z());
-    analysisManager->FillNtupleDColumn(0, 12, timeDrift);
-    
-    analysisManager->AddNtupleRow(0);
+    // Add hit to collection
+    fHitsCollection->insert(hit);
+
+    // Optional: Print hit info during event
+    hit->Print();
 
     return true;
 }
@@ -154,7 +148,6 @@ CellID DriftCellSD::DecodeCellID(const G4String& volumeName, G4int copyNo) const
     }
     
     // Extract cells-per-layer encoding from volume name
-    // Find the last underscore to get the encoding part
     size_t lastUnderscore = volumeName.rfind('_');
     if (lastUnderscore == std::string::npos) {
         G4cerr << "Warning: Could not find encoding in " << volumeName << G4endl;
@@ -185,13 +178,12 @@ CellID DriftCellSD::DecodeCellID(const G4String& volumeName, G4int copyNo) const
         cumulativeCells += cellsPerLayer[layerIdx];
         
         if (copyNo <= cumulativeCells) {
-            cellID.layer = layerIdx + 1;  // Layer IDs start from 1
-            cellID.wire = copyNo - layerStartCopy + 1;  // Wire ID within layer (1-indexed)
-            return cellID;  // Success!
+            cellID.layer = layerIdx + 1;
+            cellID.wire = copyNo - layerStartCopy + 1;
+            return cellID;
         }
     }
     
-    // If we reach here, copyNo was out of range
     G4cerr << "Warning: CopyNo " << copyNo << " out of range for " << volumeName << G4endl;
     return cellID;
 }
@@ -199,6 +191,42 @@ CellID DriftCellSD::DecodeCellID(const G4String& volumeName, G4int copyNo) const
 G4double DriftCellSD::GetTimeWithDrift(G4double time, G4ThreeVector distance) const
 { 
     return time + abs(distance.x()) / kDriftVelocity;
+}
+
+void DriftCellSD::EndOfEvent(G4HCofThisEvent* hce)
+{
+    G4int nHits = fHitsCollection->entries();
+    
+    if (nHits > 0) {
+        G4cout << "\n=== DriftCellSD: " << nHits << " hits collected in this event ===" << G4endl;
+        
+        // Optional: Print summary or fill ntuple here
+        G4AnalysisManager *analysisManager = G4AnalysisManager::Instance();
+        
+        for (G4int i = 0; i < nHits; i++) {
+            DriftCellHit* hit = (*fHitsCollection)[i];
+            CellID cellID = hit->GetCellID();
+            G4ThreeVector localPos = hit->GetLocalPos();
+            
+            // Fill ntuple
+            analysisManager->FillNtupleIColumn(0, 0, hit->GetEventID());
+            analysisManager->FillNtupleIColumn(0, 1, hit->GetPDG());
+            analysisManager->FillNtupleIColumn(0, 2, hit->GetCharge());
+            analysisManager->FillNtupleIColumn(0, 3, cellID.wheel);
+            analysisManager->FillNtupleIColumn(0, 4, cellID.sector);
+            analysisManager->FillNtupleIColumn(0, 5, cellID.station);
+            analysisManager->FillNtupleIColumn(0, 6, cellID.superLayer);
+            analysisManager->FillNtupleIColumn(0, 7, cellID.layer);
+            analysisManager->FillNtupleIColumn(0, 8, cellID.wire);
+            analysisManager->FillNtupleDColumn(0, 9, localPos.x());
+            analysisManager->FillNtupleDColumn(0, 10, localPos.y());
+            analysisManager->FillNtupleDColumn(0, 11, localPos.z());
+            analysisManager->FillNtupleDColumn(0, 12, hit->GetTimeDrift());
+            analysisManager->FillNtupleDColumn(0, 13, hit->GetEnergyDeposit());  // ← Add this
+            
+            analysisManager->AddNtupleRow(0);
+        }
+    }
 }
 
 }
