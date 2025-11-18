@@ -3,6 +3,8 @@
 
 #include "G4VUserDetectorConstruction.hh"
 #include "globals.hh"
+#include "G4FieldManager.hh"
+#include "MagneticField.hh"
 #include <vector>
 
 class G4VPhysicalVolume;
@@ -24,8 +26,8 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     void ConstructSDandField() override;
 
   private:
-    std::vector<G4LogicalVolume*> driftCellsLogicals;
-    std::vector<G4LogicalVolume*> yokeLogicals;
+    std::vector<G4LogicalVolume*> fDriftCellsLogicals;
+    std::vector<G4LogicalVolume*> fYokeLogicals;
     G4tgrMessenger* fMessenger;
 };
 

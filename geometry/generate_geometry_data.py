@@ -99,7 +99,7 @@ def create_station_volume(station, wheel, sector, station_num):
     
     # Define station volume (BOX: half-widths in X, Y, Z) - merged syntax
     geometry += f":VOLU {station_name} BOX "
-    geometry += f"{station_bounds[0]/2:.6f} {station_bounds[2]/2:.6f} {station_bounds[1]/2:.6f} G4_AIR\n"
+    geometry += f"{station_bounds[0]/2:.6f}*cm {station_bounds[2]/2:.6f}*cm {station_bounds[1]/2:.6f}*cm G4_AIR\n"
     
     # Get station transformation and rotation
     station_transform = station.transformer.get_transformation(from_frame="Station", to_frame="CMS")
@@ -114,7 +114,7 @@ def create_station_volume(station, wheel, sector, station_num):
     
     # Place station in world
     geometry += f":PLACE {station_name} 1 world RM_Station_{wheel}_{sector}_{station_num} "
-    geometry += f"{station_center[0]:.6f} {station_center[1]:.6f} {station_center[2]:.6f}\n\n"
+    geometry += f"{station_center[0]:.6f}*cm {station_center[1]:.6f}*cm {station_center[2]:.6f}*cm\n\n"
     
     return geometry, station_name, station_bounds
 
@@ -147,7 +147,7 @@ def create_yoke(station, wheel, sector, station_num, station_bounds):
     # Yoke volume: merged solid+volume syntax
     geometry += f"// Iron Yoke (radially inward, thickness={yoke_thickness:.2f} cm)\n"
     geometry += f":VOLU {yoke_name} BOX "
-    geometry += f"{station_bounds[0]/2:.6f} {station_bounds[2]/2:.6f} {yoke_thickness/2:.6f} G4_Fe\n"
+    geometry += f"{station_bounds[0]/2:.6f}*cm {station_bounds[2]/2:.6f}*cm {yoke_thickness/2:.6f}*cm G4_Fe\n"
     
     # Calculate yoke position: radially inward from station in XY plane
     station_pos_xy = np.array([station_center[0], station_center[1], 0.0])
@@ -161,7 +161,7 @@ def create_yoke(station, wheel, sector, station_num, station_bounds):
     
     # Place yoke with same rotation as station
     geometry += f":PLACE {yoke_name} 1 world RM_Station_{wheel}_{sector}_{station_num} "
-    geometry += f"{yoke_pos[0]:.6f} {yoke_pos[1]:.6f} {yoke_pos[2]:.6f}\n\n"
+    geometry += f"{yoke_pos[0]:.6f}*cm {yoke_pos[1]:.6f}*cm {yoke_pos[2]:.6f}*cm\n\n"
     
     return geometry
 
@@ -202,7 +202,7 @@ def create_superlayer_cells(station, wheel, sector, station_num, station_name):
         if first_cell:
             cell_bounds = first_cell.bounds
             geometry += f":VOLU {cell_volume_name} BOX "
-            geometry += f"{cell_bounds[0]/2:.6f} {cell_bounds[2]/2:.6f} {cell_bounds[1]/2:.6f} GasMixture\n\n"
+            geometry += f"{cell_bounds[0]/2:.6f}*cm {cell_bounds[2]/2:.6f}*cm {cell_bounds[1]/2:.6f}*cm GasMixture\n\n"
         
         # SL2 needs its own rotation matrix (rotated 90° in Z)
         if sl.number == 2:
@@ -233,7 +233,7 @@ def create_superlayer_cells(station, wheel, sector, station_num, station_name):
                 
                 # Place copy of the cell volume in station
                 geometry += f":PLACE {cell_volume_name} {copy_number} {station_name} {rotation_to_use} "
-                geometry += f"{cell_center[0]:.6f} {cell_center[1]:.6f} {cell_center[2]:.6f}\n"
+                geometry += f"{cell_center[0]:.6f}*cm {cell_center[1]:.6f}*cm {cell_center[2]:.6f}*cm\n"
                 copy_number += 1
         geometry += "\n"
     
@@ -276,7 +276,7 @@ def create_honeycomb(station, wheel, sector, station_num, station_name, station_
     # Honeycomb volume: merged syntax
     geometry += f"// Aluminum Honeycomb (between SL2 and SL1)\n"
     geometry += f":VOLU {honeycomb_name} BOX "
-    geometry += f"{station_bounds[0]/2 - 0.5:.6f} {station_bounds[2]/2 - 0.5:.6f} {honeycomb_thickness/2 - 0.5:.6f} G4_Al\n"
+    geometry += f"{station_bounds[0]/2 - 0.5:.6f}*cm {station_bounds[2]/2 - 0.5:.6f}*cm {honeycomb_thickness/2 - 0.5:.6f}*cm G4_Al\n"
     
     # Position: midpoint between SL2 (top) and SL1 (bottom) in Z
     honeycomb_z = (sl2_z_max + sl1_z_min) / 2.0
@@ -284,7 +284,7 @@ def create_honeycomb(station, wheel, sector, station_num, station_name, station_
     
     # Place honeycomb in station (no rotation needed)
     geometry += f":PLACE {honeycomb_name} 1 {station_name} R0 "
-    geometry += f"{honeycomb_pos[0]:.6f} {honeycomb_pos[1]:.6f} {honeycomb_pos[2]:.6f}\n\n"
+    geometry += f"{honeycomb_pos[0]:.6f}*cm {honeycomb_pos[1]:.6f}*cm {honeycomb_pos[2]:.6f}*cm\n\n"
     
     return geometry
 

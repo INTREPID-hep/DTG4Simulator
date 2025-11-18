@@ -14,9 +14,9 @@
 #include "G4String.hh"
 #include "G4SDManager.hh"
 #include "DriftCellSD.hh"
-#include "MagneticField.hh"
-#include "G4FieldBuilder.hh"
 #include "DTSimConstants.hh"
+#include "G4FieldBuilder.hh"
+#include "G4UniformMagField.hh"
 
 namespace DTSim
 {
@@ -45,15 +45,16 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     // Find all DriftCell logical volumes: Necessary for setting sensitive volumes
     auto logVolStore = G4LogicalVolumeStore::GetInstance();
-    driftCellsLogicals.clear();
-    
+    fDriftCellsLogicals.clear();
+    fYokeLogicals.clear();
+
     for (auto* logVol : *logVolStore) {
         G4String name = logVol->GetName();
         if (G4StrUtil::contains(name, "DriftCell")) {
-            driftCellsLogicals.push_back(logVol);
+            fDriftCellsLogicals.push_back(logVol);
         }
         else if (G4StrUtil::contains(name, "Yoke")) {
-            yokeLogicals.push_back(logVol);
+            fYokeLogicals.push_back(logVol);
         }
     }
     
@@ -62,30 +63,44 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
 void DetectorConstruction::ConstructSDandField()
 {
-    DTSim::DriftCellSD* driftCellSD = new DTSim::DriftCellSD("/DriftCellSD", "DriftCellHitsCollection");
-    auto sdManager = G4SDManager::GetSDMpointer();
-    sdManager->AddNewDetector(driftCellSD);
+    // ========== Setup Sensitive Detectors ==========
+    if (!fDriftCellsLogicals.empty()) {
+        DTSim::DriftCellSD* driftCellSD = new DTSim::DriftCellSD("/DriftCellSD", "DriftCellHitsCollection");
+        auto sdManager = G4SDManager::GetSDMpointer();
+        sdManager->AddNewDetector(driftCellSD);
+        
+        
+        for (auto* logVol : fDriftCellsLogicals) {
+            logVol->SetSensitiveDetector(driftCellSD);
+        }
+    }
+
+    // ========== Setup Magnetic Fields ==========
     
-    for (auto* logVol : driftCellsLogicals) {
-        logVol->SetSensitiveDetector(driftCellSD);
-    }
-
-    // Magnetic field
-    G4FieldBuilder* fieldBuilder = G4FieldBuilder::Instance();
-
-    // Define global magnetic field
-    DTSim::MagneticField* worldMagField = new DTSim::MagneticField();
+    //    This automatically creates UI commands under /field/
+    auto fieldBuilder = G4FieldBuilder::Instance();
+    
+    // world magnetic field
+    // DTSim::MagneticField* worldMagField = new DTSim::MagneticField(); currently unused
+    G4MagneticField* worldMagField = new G4UniformMagField(
+        G4ThreeVector(0., 0., DTSim::kOutMagneticField)
+    );
     fieldBuilder->SetGlobalField(worldMagField);
-    // Define yoke magnetic field
-    G4MagneticField* yokeMagField = new G4UniformMagField(G4ThreeVector(0., 0., DTSim::kYokeMagneticField));;
-    for (auto* logVol : yokeLogicals) {
-        fieldBuilder->CreateFieldParameters(logVol->GetName());
-        fieldBuilder->SetLocalField(yokeMagField, logVol);
+    
+    if (!fYokeLogicals.empty()) {
+        // Create uniform field for yoke
+        G4MagneticField* yokeMagField = new G4UniformMagField(
+            G4ThreeVector(0., 0., DTSim::kYokeMagneticField)
+        );
+        
+        // Attach the same field to all yoke logical volumes
+        for (auto* logVol : fYokeLogicals) {
+            //    This creates UI commands under /field/LogVol_NAME/
+            fieldBuilder->SetLocalField(yokeMagField, logVol);
+        }
     }
-
-    // Construct all Geant4 field objects
+    
     fieldBuilder->ConstructFieldSetup();
-
 }
 
 } // namespace DTSim

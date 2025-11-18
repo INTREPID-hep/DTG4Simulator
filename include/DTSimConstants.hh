@@ -22,10 +22,10 @@ constexpr G4int kMinLayer = 1;
 constexpr G4int kMaxLayer = 4;
 
 // Magnetic field constants
-constexpr G4double kInnerMagneticField = 10*tesla;
-constexpr G4double kOutMagneticField = -2.0*tesla; // Negative for field direction
-constexpr G4double kYokeMagneticField = -0.5*tesla;
-const G4double kSolenoidRadius = 3.5*m;   // Inner solenoid radius
+constexpr G4double kInnerMagneticField = 3.8 *tesla; // Inner solenoid field - currently unused
+const G4double kSolenoidRadius = 3.5*m;   // Inner solenoid radius - currently unused
+constexpr G4double kOutMagneticField = 0.0 *tesla; 
+constexpr G4double kYokeMagneticField = -2.0 *tesla; // Negative for field direction
 
 }
 
