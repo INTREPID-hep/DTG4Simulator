@@ -25,6 +25,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 
   private:
     std::vector<G4LogicalVolume*> driftCellsLogicals;
+    std::vector<G4LogicalVolume*> yokeLogicals;
     G4tgrMessenger* fMessenger;
 };
 

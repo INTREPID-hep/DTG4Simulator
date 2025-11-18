@@ -61,11 +61,15 @@
 # To superimpose all of the events from a given run:
 /vis/scene/endOfEventAction accumulate
 
+# command for testing
+/DTSim/generator/randomizePrimary 0
+/DTSim/generator/momentum 200 GeV
+
+/vis/scene/add/magneticField 10
+
 # Re-establish auto refreshing and verbosity:
 /vis/viewer/set/autoRefresh true
 /vis/verbose warnings
 
 # For file-based drivers, use this to create an empty detector view:
 /vis/viewer/flush
-
-

@@ -4,4 +4,4 @@
 
 /DTSim/generator/randomizePrimary 0
 /DTSim/generator/momentum 200 GeV
-/run/beamOn 1000
+/run/beamOn 1

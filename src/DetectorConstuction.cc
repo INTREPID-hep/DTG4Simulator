@@ -14,6 +14,9 @@
 #include "G4String.hh"
 #include "G4SDManager.hh"
 #include "DriftCellSD.hh"
+#include "MagneticField.hh"
+#include "G4FieldBuilder.hh"
+#include "DTSimConstants.hh"
 
 namespace DTSim
 {
@@ -49,6 +52,9 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
         if (G4StrUtil::contains(name, "DriftCell")) {
             driftCellsLogicals.push_back(logVol);
         }
+        else if (G4StrUtil::contains(name, "Yoke")) {
+            yokeLogicals.push_back(logVol);
+        }
     }
     
     return const_cast<G4VPhysicalVolume*>(worldPhys);
@@ -63,6 +69,23 @@ void DetectorConstruction::ConstructSDandField()
     for (auto* logVol : driftCellsLogicals) {
         logVol->SetSensitiveDetector(driftCellSD);
     }
-}
+
+    // Magnetic field
+    G4FieldBuilder* fieldBuilder = G4FieldBuilder::Instance();
+
+    // Define global magnetic field
+    DTSim::MagneticField* worldMagField = new DTSim::MagneticField();
+    fieldBuilder->SetGlobalField(worldMagField);
+    // Define yoke magnetic field
+    G4MagneticField* yokeMagField = new G4UniformMagField(G4ThreeVector(0., 0., DTSim::kYokeMagneticField));;
+    for (auto* logVol : yokeLogicals) {
+        fieldBuilder->CreateFieldParameters(logVol->GetName());
+        fieldBuilder->SetLocalField(yokeMagField, logVol);
+    }
+
+    // Construct all Geant4 field objects
+    fieldBuilder->ConstructFieldSetup();
 
 }
+
+} // namespace DTSim
