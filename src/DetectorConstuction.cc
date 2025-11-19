@@ -1,4 +1,5 @@
 #include "DetectorConstruction.hh"
+#include "CommandLineParser.hh"
 #include "G4Material.hh"
 #include "G4NistManager.hh"
 #include "G4Box.hh"
@@ -76,6 +77,16 @@ void DetectorConstruction::ConstructSDandField()
     }
 
     // ========== Setup Magnetic Fields ==========
+    // Check if magnetic field option was enabled via command line
+    auto* parser = DTSim::CommandLineParser::Instance();
+    G4bool enableMagneticField = parser->HasFlag("-B");
+    
+    if (!enableMagneticField) {
+        G4cout << "Magnetic field disabled (use -B flag to enable)" << G4endl;
+        return;
+    }
+    
+    G4cout << "Building magnetic field configuration..." << G4endl;
     
     //    This automatically creates UI commands under /field/
     auto fieldBuilder = G4FieldBuilder::Instance();
@@ -92,11 +103,13 @@ void DetectorConstruction::ConstructSDandField()
         G4MagneticField* yokeMagField = new G4UniformMagField(
             G4ThreeVector(0., 0., DTSim::kYokeMagneticField)
         );
+        // This creates UI commands under /field/Yokes_...
+        fieldBuilder->SetLocalField(yokeMagField, fYokeLogicals[0]);
         
-        // Attach the same field to all yoke logical volumes
-        for (auto* logVol : fYokeLogicals) {
-            //    This creates UI commands under /field/LogVol_NAME/
-            fieldBuilder->SetLocalField(yokeMagField, logVol);
+        // Share the same FieldManager with all other yoke volumes
+        G4FieldManager* yokeFieldMgr = fYokeLogicals[0]->GetFieldManager();
+        for (size_t i = 1; i < fYokeLogicals.size(); ++i) {
+            fYokeLogicals[i]->SetFieldManager(yokeFieldMgr, false);
         }
     }
     

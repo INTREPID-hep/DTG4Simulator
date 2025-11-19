@@ -29,6 +29,7 @@
 
 #include "DetectorConstruction.hh"
 #include "ActionInitialization.hh"
+#include "CommandLineParser.hh"
 
 #include "G4RunManagerFactory.hh"
 #include "G4SteppingVerbose.hh"
@@ -39,13 +40,39 @@
 #include "G4VisExecutive.hh"
 #include "G4UIExecutive.hh"
 
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 int main(int argc,char** argv)
 {
-  // Detect interactive mode (if no arguments) and define UI session
+  // Setup command-line parser (singleton for access in Geant4 classes)
+  auto* parser = DTSim::CommandLineParser::Instance();
+  parser->AddOption("-m,--macro", "Macro file to execute", false, "vis.mac");
+  parser->AddFlag("-b,--batch", "Run in batch mode (non-interactive)");
+  parser->AddFlag("-B,--magnetic-field", "Include magnetic field in detector");
+  
+  // Parse arguments
+  G4int parseResult = parser->Parse(argc, argv);
+  if (parseResult != 0) {
+    DTSim::CommandLineParser::DeleteInstance();
+    return (parseResult > 0) ? 0 : 1;  // 1 = help (success), -1 = error
+  }
+
+  // Get parsed options
+  G4bool batchMode = parser->HasFlag("-b");
+  G4String macroFileName = parser->GetOption("-m");
+
+  // Validate batch mode requirements
+  if (batchMode && macroFileName == "vis.mac") {
+    G4cerr << "Error: Batch mode (-b) requires a macro file specified with -m" << G4endl;
+    DTSim::CommandLineParser::DeleteInstance();
+    return 1;
+  }
+
+  // Setup UI for interactive mode
   G4UIExecutive* ui = nullptr;
-  if ( argc == 1 ) { ui = new G4UIExecutive(argc, argv); }
+  if (!batchMode) {
+    ui = new G4UIExecutive(argc, argv);
+  }
+
 
   // Use G4SteppingVerboseWithUnits
   G4int precision = 4;
@@ -76,29 +103,19 @@ int main(int argc,char** argv)
   // Get the pointer to the User Interface manager
   auto UImanager = G4UImanager::GetUIpointer();
 
-  if ( !ui ) {
-    // execute an argument macro file if exist
-    G4String command = "/control/execute ";
-    G4String fileName = argv[1];
-    UImanager->ApplyCommand(command+fileName);
-  }
-  else {
-    UImanager->ApplyCommand("/control/execute vis.mac");
-    // if (ui->IsGUI()) {
-    //      UImanager->ApplyCommand("/control/execute gui.mac");
-    // }
-    // start interactive session
+  // Execute macro file
+  UImanager->ApplyCommand("/control/execute " + macroFileName);
+  
+  // Start interactive session if not in batch mode
+  if (!batchMode && ui) {
     ui->SessionStart();
     delete ui;
   }
 
-  // Job termination
-  // Free the store: user actions, physics_list and detector_description are
-  // owned and deleted by the run manager, so they should not be deleted
-  // in the main() program !
-
+  // Cleanup
   delete visManager;
   delete runManager;
+  DTSim::CommandLineParser::DeleteInstance();
+  
+  return 0;
 }
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
