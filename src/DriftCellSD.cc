@@ -27,61 +27,69 @@ void DriftCellSD::Initialize(G4HCofThisEvent* hce)
 
 G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
 {
-    // Get particle properties
+    // Don't create hit if neutral particle or energy below threshold
     auto charge = step->GetTrack()->GetDefinition()->GetPDGCharge();
-    auto pdgID  = step->GetTrack()->GetDefinition()->GetPDGEncoding();
+    auto edep = step->GetTotalEnergyDeposit();
 
-    // // Only process charged particles
-    // if (charge == 0.) return true;
-
-    // Get energy deposit - don't create hit if no energy deposited
-    G4double edep = step->GetTotalEnergyDeposit();
-    if (edep == 0.) return true;
+    if (charge == 0 || edep < DTSim::kMinEnergyDeposit) return true;
 
     auto preStepPoint = step->GetPreStepPoint();
+    auto postStepPoint = step->GetPostStepPoint();
 
-    auto touchable = step->GetPreStepPoint()->GetTouchable();
+    // Use PreStepPoint to get the volume where the step started (the sensitive volume)
+    auto touchable = preStepPoint->GetTouchable();
     auto physVol = touchable->GetVolume();
     auto copyNo = physVol->GetCopyNo();
     auto volumeName = physVol->GetLogicalVolume()->GetName();
-
-    auto worldPos = preStepPoint->GetPosition();
-    auto localPos = touchable->GetHistory()->GetTopTransform().TransformPoint(worldPos);
-
-    // Get position with respect to the center of the cell:
-    G4ThreeVector origin(0., 0., 0.);
-    auto detectorCenter = touchable->GetHistory()->GetTopTransform().Inverse().TransformPoint(origin);
-    auto hitOffset = worldPos - detectorCenter;
-
-    auto timeDrift = GetTimeWithDrift(preStepPoint->GetGlobalTime(), hitOffset);
-    
     // Decode complete cell identification in one call
     CellID cellID = DecodeCellID(volumeName, copyNo);
-    
     // Check if decoding was successful
     if (!cellID.isValid()) {
         G4cerr << "Warning: Failed to decode cell ID for volume " << volumeName 
                << " copy " << copyNo << G4endl;
         return false;
     }
+
+    // Calculate positions in different coordinate frames
+    G4ThreeVector worldPos, cellStationPos, cellLocalPos;
+    // middle point of the step
+    worldPos = (preStepPoint->GetPosition() + postStepPoint->GetPosition()) * 0.5;
     
+    // Transform to Station frame (one level up from DriftCell)
+    cellStationPos = touchable->GetHistory()->GetTransform(1).TransformPoint(worldPos);
+    
+    // Transform to DriftCell's local frame (accounts for cell rotation)
+    cellLocalPos = touchable->GetHistory()->GetTopTransform().TransformPoint(worldPos);
+    
+    // Calculate time with drift
+    G4double midTime = (preStepPoint->GetGlobalTime() + postStepPoint->GetGlobalTime()) * 0.5;
+    // Use radial distance from wire (cell center)
+    G4double radialDistance = sqrt(cellLocalPos.x()*cellLocalPos.x() + cellLocalPos.z()*cellLocalPos.z());
+
+    auto timeDrift = midTime + radialDistance / kDriftVelocity;
+        
+    // Get other particle properties
+    auto pdgID  = step->GetTrack()->GetDefinition()->GetPDGEncoding();
+    const G4VProcess* process = step->GetPostStepPoint()->GetProcessDefinedStep();
+    G4int processType = process ? process->GetProcessType() : -999;
+    // Get current event ID
     G4int evt = G4RunManager::GetRunManager()->GetCurrentEvent()->GetEventID();
 
     // Create a new hit and fill it
     DriftCellHit* hit = new DriftCellHit();
+
     hit->SetEventID(evt);
     hit->SetPDG(pdgID);
     hit->SetCharge(charge);
+    hit->SetProcessType(processType);
     hit->SetCellID(cellID);
-    hit->SetLocalPos(localPos);
+    hit->SetLocalPos(cellStationPos);  // Position in Station frame
+    hit->SetGlobalPos(worldPos);
     hit->SetTimeDrift(timeDrift);
-    hit->SetEnergyDeposit(edep);  // ← Add this if you want to store it
+    hit->SetEnergyDeposit(edep);
 
     // Add hit to collection
     fHitsCollection->insert(hit);
-
-    // Optional: Print hit info during event
-    hit->Print();
 
     return true;
 }
@@ -92,7 +100,7 @@ CellID DriftCellSD::DecodeCellID(const G4String& volumeName, G4int copyNo) const
     
     // Volume name format: DriftCell_W{wheel}_Sec{sector}_St{station}_SL{sl}_{encoding}
     // Example: DriftCell_W-1_Sec1_St2_SL1_60605959
-    
+
     size_t pos = 0;
     
     // Extract wheel
@@ -188,11 +196,6 @@ CellID DriftCellSD::DecodeCellID(const G4String& volumeName, G4int copyNo) const
     return cellID;
 }
 
-G4double DriftCellSD::GetTimeWithDrift(G4double time, G4ThreeVector distance) const
-{ 
-    return time + abs(distance.x()) / kDriftVelocity;
-}
-
 void DriftCellSD::EndOfEvent(G4HCofThisEvent* hce)
 {
     G4int nHits = fHitsCollection->entries();
@@ -200,7 +203,6 @@ void DriftCellSD::EndOfEvent(G4HCofThisEvent* hce)
     if (nHits > 0) {
         G4cout << "\n=== DriftCellSD: " << nHits << " hits collected in this event ===" << G4endl;
         
-        // Optional: Print summary or fill ntuple here
         G4AnalysisManager *analysisManager = G4AnalysisManager::Instance();
         
         for (G4int i = 0; i < nHits; i++) {
@@ -222,7 +224,8 @@ void DriftCellSD::EndOfEvent(G4HCofThisEvent* hce)
             analysisManager->FillNtupleDColumn(0, 10, localPos.y());
             analysisManager->FillNtupleDColumn(0, 11, localPos.z());
             analysisManager->FillNtupleDColumn(0, 12, hit->GetTimeDrift());
-            analysisManager->FillNtupleDColumn(0, 13, hit->GetEnergyDeposit());  // ← Add this
+            analysisManager->FillNtupleDColumn(0, 13, hit->GetEnergyDeposit());
+            analysisManager->FillNtupleIColumn(0, 14, hit->GetProcessType());
             
             analysisManager->AddNtupleRow(0);
         }

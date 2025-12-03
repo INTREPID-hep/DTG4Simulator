@@ -3,6 +3,7 @@
 
 #include "G4VUserPrimaryGeneratorAction.hh"
 #include "globals.hh"
+#include "DTSimConstants.hh"
 
 #include <CLHEP/Units/SystemOfUnits.h>
 
@@ -53,9 +54,9 @@ class PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
     G4ParticleDefinition* fPion = nullptr;
     G4ParticleDefinition* fKaon = nullptr;
     G4ParticleDefinition* fProton = nullptr;
-    G4double fMomentum = 1000. * CLHEP::MeV;
-    G4double fSigmaMomentum = 50. * CLHEP::MeV;
-    G4double fSigmaAngle = 10. * CLHEP::deg;
+    G4double fMomentum = DTSim::kDefaultMomentum;
+    G4double fSigmaMomentum = DTSim::kDefaultSigmaMomentum;
+    G4double fSigmaAngle = DTSim::kDefaultSigmaAngle;
     G4bool fRandomizePrimary = true;
 };
 

@@ -6,38 +6,66 @@ El proyecto usa un único Sensitive Detector (`DriftCellSD`) para todas las celd
 
 ## Clase DriftCellHit
 
-Cada hit almacena: evento ID, PDG de la partícula, carga, identificación de la celda (CellID), posición local, tiempo de drift, y energía depositada. El struct `CellID` contiene la jerarquía completa: wheel (-2 a +2), sector (1-14), station (1-4), superlayer (1-3), layer (1-4), y wire (~1-60). Incluye validación de rangos mediante `isValid()`.
+Cada hit almacena: evento ID, PDG de la partícula, carga, tipo de proceso (processType), identificación de la celda (CellID), posiciones (local en marco de Station y global en World), tiempo de drift, y energía depositada. 
+
+El struct `CellID` contiene la jerarquía completa: wheel (-2 a +2), sector (1-14), station (1-4), superlayer (1-3), layer (1-4), y wire (~1-60). Incluye validación de rangos mediante `isValid()`.
 
 ## Procesamiento de Hits: DriftCellSD::ProcessHits()
 
 El método `ProcessHits()` ejecuta para cada step en volúmenes sensibles:
 
-1. **Filtro**: Solo registra steps con deposición de energía (edep > 0)
-2. **Información geométrica**: Extrae nombre del volumen, número de copia, y posiciones (global y local)
-3. **Decodificación**: Convierte nombre del volumen y copyNo en CellID completo
-4. **Drift time**: Calcula tiempo incluyendo corrección de deriva (t = t₀ + |x|/v_drift, con v_drift = 54 μm/ns)
-5. **Registro**: Crea objeto DriftCellHit y lo inserta en la colección
+1. **Filtro inicial**: Solo procesa partículas cargadas con energía depositada mayor al umbral (kMinEnergyDeposit = 26.6 eV, energía de ionización del gas Ar-CO2 85:15)
+
+2. **Decodificación geométrica**: 
+   - Extrae nombre del volumen y copyNo del **PreStepPoint** (asegura obtener el volumen sensible correcto)
+   - Decodifica CellID completo del nombre del volumen
+   - Valida que el CellID sea correcto antes de continuar
+
+3. **Cálculo de posiciones**:
+   - **worldPos**: Punto medio del step = (preStepPos + postStepPos) / 2
+   - **cellStationPos**: Posición en marco de coordenadas de la Station (navegando al nivel 1 en la jerarquía de touchable)
+   - **cellLocalPos**: Posición en marco local de la DriftCell (incluye rotaciones específicas de cada superlayer, ej: SL2 tiene rotación de 90°)
+
+4. **Cálculo de tiempo de drift**: 
+   - Tiempo medio del step: midTime = (preTime + postTime) / 2
+   - Distancia radial de deriva: r = √(x² + z²) en coordenadas locales de la celda
+   - Tiempo con drift: t_drift = midTime + r / v_drift (v_drift = 54 μm/ns)
+
+5. **Información de proceso**: Obtiene el tipo de proceso físico que causó el step (electromagnetic, hadronic, etc.)
+
+6. **Registro**: Crea objeto DriftCellHit con toda la información y lo inserta en la colección
 
 ### Decodificación del CellID
 
-El nombre del volumen tiene formato `DriftCell_W{wheel}_Sec{sector}_St{station}_SL{sl}_{encoding}`, donde el encoding especifica celdas por capa (ej: "60605959" = 60, 60, 59, 59 celdas en 4 capas). El copyNo se mapea secuencialmente a través de las capas para determinar layer y wire. Ejemplo: encoding [60, 60, 59, 59], copyNo=125 → layer=3, wire=5.
+El nombre del volumen tiene formato `DriftCell_W{wheel}_Sec{sector}_St{station}_SL{sl}_{encoding}`, donde el encoding especifica celdas por capa (ej: "60605959" = 60, 60, 59, 59 celdas en 4 capas). El copyNo se mapea secuencialmente a través de las capas para determinar layer y wire. 
+
+Ejemplo: encoding [60, 60, 59, 59], copyNo=125 → layer=3, wire=5.
 
 ## Salida de Datos
 
-### Formato de Hits
+### NTuple ROOT
 
-Cada hit imprime: evento, PDG, carga, CellID completo, posición local, tiempo de drift, y energía depositada. Ejemplo: `DriftCellHit: Event 42 PDG=13 q=-1 CellID=W-1_Sec1_St2_SL1_L3_Wire25 LocalPos=(1.2,5.3,0.1) TimeDrift=350 ns Edep=2.5 keV`
-
-Al final del evento, los hits se guardan en el NTuple ROOT (ver [analysis.md](analysis.md) para detalles de la estructura de datos).
-
-## Visualización de Hits
-
-En modo interactivo con OpenGL, usar `/vis/scene/add/hits` para dibujar círculos rojos en las posiciones de los hits.
+Los hits se almacenan en un TTree con las siguientes columnas:
+- `g4dtsimHit_eventNumber`: Número de evento
+- `g4dtsimHit_PDG`: Código PDG de la partícula
+- `g4dtsimHit_q`: Carga de la partícula
+- `g4dtsimHit_wheel`: ID de wheel (-2 a 2)
+- `g4dtsimHit_sector`: ID de sector (1-14)
+- `g4dtsimHit_station`: ID de station (1-4)
+- `g4dtsimHit_superlayer`: ID de superlayer (1-3)
+- `g4dtsimHit_layer`: ID de layer (1-4)
+- `g4dtsimHit_cell`: Número de wire en la layer
+- `g4dtsimHit_xlocal`: Posición X en marco de Station (cm)
+- `g4dtsimHit_ylocal`: Posición Y en marco de Station (cm)
+- `g4dtsimHit_zlocal`: Posición Z en marco de Station (cm)
+- `g4dtsimHit_timewithdrift`: Tiempo incluyendo deriva (ns)
+- `g4dtsimHit_edep`: Energía depositada (MeV)
+- `g4dtsimHit_processType`: Tipo de proceso físico (código Geant4)
 
 ## Múltiples Hits por Celda
 
-El sistema registra múltiples hits en la misma celda si: la partícula atraviesa en múltiples steps, diferentes partículas del shower golpean la celda, o una partícula entra/sale/reingresa.
+El sistema registra múltiples hits en la misma celda si: la partícula atraviesa en múltiples steps, diferentes partículas del shower golpean la celda, o una partícula entra/sale/reingresa. Cada step que deposite energía genera un hit independiente.
 
 ## Validación del CellID
 
-El método `CellID::isValid()` verifica que todos los campos estén dentro de los rangos permitidos (wheel: -2 a 2, sector: 1-14, station: 1-4, superlayer: 1-3, layer: 1-4, wire ≥ 0). Genera warnings si la decodificación falla.
+El método `CellID::isValid()` verifica que todos los campos estén dentro de los rangos permitidos (wheel: -2 a 2, sector: 1-14, station: 1-4, superlayer: 1-3, layer: 1-4, wire ≥ 0). Si la decodificación falla, se genera un warning y el hit no se registra (retorna false).

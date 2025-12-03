@@ -2,12 +2,14 @@
 #define DTSimConstants_hh 1
 
 #include "G4SystemOfUnits.hh"
+#include "G4ThreeVector.hh"
 
 namespace DTSim
 {
 
 // Drift tube physical constants
 constexpr G4double kDriftVelocity = 54.0*micrometer/nanosecond;
+constexpr G4double kMinEnergyDeposit = 26.6 * eV; // Minimum energy deposit to ionize a gas mixture Ar-Co2 85:15
 
 // Geometry limits
 constexpr G4int kMinWheel = -2;
@@ -27,6 +29,12 @@ const G4double kSolenoidRadius = 3.5*m;   // Inner solenoid radius - currently u
 constexpr G4double kOutMagneticField = 0.0 *tesla; 
 constexpr G4double kYokeMagneticField = -2.0 *tesla; // Negative for field direction
 
+// Primary generator defaults
+constexpr G4double kDefaultMomentum = 1000.0*MeV;
+constexpr G4double kDefaultSigmaMomentum = 50.0*MeV;
+constexpr G4double kDefaultSigmaAngle = 2.0*deg;
+constexpr G4double kDefaultParticleEnergy = 10.0*GeV;
+const G4ThreeVector kDefaultParticlePosition = G4ThreeVector(0., 0., -2.5*m);
 }
 
 #endif

@@ -26,7 +26,7 @@ PrimaryGeneratorAction::PrimaryGeneratorAction()
   fProton = particleTable->FindParticle("proton");
 
   // default particle kinematics
-  fParticleGun->SetParticlePosition(G4ThreeVector(0.,0.,-2.5*m));
+  fParticleGun->SetParticlePosition(DTSim::kDefaultParticlePosition);
   fParticleGun->SetParticleDefinition(fMuon);
 
   // define commands for this class

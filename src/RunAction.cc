@@ -25,8 +25,9 @@ RunAction::RunAction()
     analysisManager->CreateNtupleDColumn("g4dtsimHit_xlocal");
     analysisManager->CreateNtupleDColumn("g4dtsimHit_ylocal");
     analysisManager->CreateNtupleDColumn("g4dtsimHit_zlocal");
-    analysisManager->CreateNtupleDColumn("g4dtsimHit_timewithdrift");
-    analysisManager->CreateNtupleDColumn("g4dtsimHit_edep");  // ← Add this
+    analysisManager->CreateNtupleDColumn("g4dtsimHit_time");
+    analysisManager->CreateNtupleDColumn("g4dtsimHit_edep");
+    analysisManager->CreateNtupleIColumn("g4dtsimHit_process_type");
     analysisManager->FinishNtuple();
 }
 RunAction::~RunAction()

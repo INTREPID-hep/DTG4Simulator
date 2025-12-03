@@ -32,8 +32,10 @@ class DriftCellHit : public G4VHit
       void SetEventID(G4int id)           { fEventID = id; }
       void SetPDG(G4int pdg)              { fPDG = pdg; }
       void SetCharge(G4int q)             { fCharge = q; }
+      void SetProcessType(G4int type)     { fProcessType = type; }
       void SetCellID(const CellID& id)    { fCellID = id; }
       void SetLocalPos(G4ThreeVector pos) { fLocalPos = pos; }
+      void SetGlobalPos(G4ThreeVector pos) { fGlobalPos = pos; }
       void SetTimeDrift(G4double t)       { fTimeDrift = t; }
       void SetEnergyDeposit(G4double edep) { fEnergyDeposit = edep; }
 
@@ -41,8 +43,10 @@ class DriftCellHit : public G4VHit
       G4int GetEventID() const            { return fEventID; }
       G4int GetPDG() const                { return fPDG; }
       G4int GetCharge() const             { return fCharge; }
+      G4int GetProcessType() const        { return fProcessType; }
       CellID GetCellID() const            { return fCellID; }
       G4ThreeVector GetLocalPos() const   { return fLocalPos; }
+      G4ThreeVector GetGlobalPos() const  { return fGlobalPos; }
       G4double GetTimeDrift() const       { return fTimeDrift; }
       G4double GetEnergyDeposit() const   { return fEnergyDeposit; }
 
@@ -50,10 +54,12 @@ class DriftCellHit : public G4VHit
       G4int fEventID;
       G4int fPDG;
       G4int fCharge;
+      G4int fProcessType;
       CellID fCellID;
       G4ThreeVector fLocalPos;
+      G4ThreeVector fGlobalPos;
       G4double fTimeDrift;
-      G4double fEnergyDeposit;  // ← Add this
+      G4double fEnergyDeposit;
 };
 
 // Define hits collection type

@@ -24,8 +24,6 @@ class DriftCellSD : public G4VSensitiveDetector
       G4bool ProcessHits(G4Step* step, G4TouchableHistory* history) override;
 
   private:
-      G4double GetTimeWithDrift(G4double time, G4ThreeVector distance) const;
-      
       CellID DecodeCellID(const G4String& volumeName, G4int copyNo) const;
 
       DriftCellHitsCollection* fHitsCollection = nullptr;

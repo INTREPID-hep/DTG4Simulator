@@ -22,7 +22,7 @@ void DriftCellHit::Draw()
     G4VVisManager* pVVisManager = G4VVisManager::GetConcreteInstance();
     if (pVVisManager) {
         // Draw a small circle at the local position
-        G4Circle circle(fLocalPos);
+        G4Circle circle(fGlobalPos);
         circle.SetScreenSize(4.);
         circle.SetFillStyle(G4Circle::filled);
         G4VisAttributes attribs(G4Colour::Red());
@@ -35,11 +35,13 @@ void DriftCellHit::Print()
 {
     G4cout << "DriftCellHit: Event " << fEventID
            << " PDG=" << fPDG
+           << " ProcessType=" << fProcessType
            << " q=" << fCharge
+           << " Edep=" << G4BestUnit(fEnergyDeposit, "Energy")
            << " CellID=" << fCellID
-           << " LocalPos=" << fLocalPos
+           << " LocalPos=" << fLocalPos/cm << " cm"
+           << " GlobalPos=" << fGlobalPos/cm << " cm"
            << " TimeDrift=" << G4BestUnit(fTimeDrift, "Time")
-           << " Edep=" << G4BestUnit(fEnergyDeposit, "Energy") 
            << G4endl;
 }
 
