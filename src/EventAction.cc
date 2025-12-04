@@ -41,7 +41,8 @@ void EventAction::EndOfEventAction(const G4Event* event)
     // Fill event ID
     analysisManager->FillNtupleIColumn(0, 0, event->GetEventID());
 
-    // Fill hits and digis branches
+    // Fill generator, hits and digis branches
+    fillGenBranches(event, analysisManager);
     fillHitBranches(event, analysisManager);
     fillDigiBranches(event, analysisManager);
     
@@ -74,6 +75,13 @@ void EventAction::clearVectors()
     fRunAction->fDigi_Layer.clear();
     fRunAction->fDigi_Wire.clear();
     fRunAction->fDigi_TDC.clear();
+    
+    // Clear gen vectors
+    fRunAction->fGen_PDG.clear();
+    fRunAction->fGen_Charge.clear();
+    fRunAction->fGen_Pt.clear();
+    fRunAction->fGen_Eta.clear();
+    fRunAction->fGen_Phi.clear();
 }
 
 void EventAction::fillHitBranches(const G4Event* event, G4AnalysisManager* analysisManager)
@@ -171,6 +179,51 @@ void EventAction::fillDigiBranches(const G4Event* event, G4AnalysisManager* anal
         fRunAction->fDigi_Wire.push_back(cellID.wire);
         fRunAction->fDigi_TDC.push_back(digi->GetTDC());
     }
+}
+
+void EventAction::fillGenBranches(const G4Event* event, G4AnalysisManager* analysisManager)
+{
+    G4int nPrimaries = 0;
+    
+    // Loop over all primary vertices
+    G4int nVertices = event->GetNumberOfPrimaryVertex();
+    for (G4int iVtx = 0; iVtx < nVertices; iVtx++) {
+        G4PrimaryVertex* vertex = event->GetPrimaryVertex(iVtx);
+        if (!vertex) continue;
+        
+        // Loop over all primaries in this vertex
+        G4PrimaryParticle* primary = vertex->GetPrimary();
+        while (primary) {
+            nPrimaries++;
+            
+            // Get momentum components
+            G4double px = primary->GetPx();
+            G4double py = primary->GetPy();
+            G4double pz = primary->GetPz();
+            
+            // Calculate pt, eta, phi
+            G4double pt = std::sqrt(px*px + py*py);
+            G4double p = std::sqrt(px*px + py*py + pz*pz);
+            G4double eta = 0.5 * std::log((p + pz) / (p - pz));
+            G4double phi = std::atan2(py, px);
+            
+            // Fill vectors
+            fRunAction->fGen_PDG.push_back(primary->GetPDGcode());
+            fRunAction->fGen_Charge.push_back(primary->GetCharge());
+            fRunAction->fGen_Pt.push_back(pt);
+            fRunAction->fGen_Eta.push_back(eta);
+            fRunAction->fGen_Phi.push_back(phi);
+            
+            // Move to next primary in this vertex
+            primary = primary->GetNext();
+        }
+    }
+    
+    // Fill scalar column for number of primaries (column 24)
+    analysisManager->FillNtupleIColumn(0, 24, nPrimaries);
+    
+    G4cout << "=== EventAction: " << nPrimaries << " primary particles generated in event " 
+           << event->GetEventID() << " ===" << G4endl;
 }
 
 }

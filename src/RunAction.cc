@@ -16,30 +16,37 @@ RunAction::RunAction()
     // Create ntuple for DTG4Sim hits - one row per event with vector branches
     analysisManager->CreateNtuple("DTG4Tree", "DTG4Tree");
     analysisManager->CreateNtupleIColumn("event_eventNumber");
-    analysisManager->CreateNtupleIColumn("g4dtSimHit_nSimHits");
-    analysisManager->CreateNtupleIColumn("g4dtSimHit_PDG", fHit_PDG);
-    analysisManager->CreateNtupleIColumn("g4dtSimHit_q", fHit_Charge);
-    analysisManager->CreateNtupleIColumn("g4dtSimHit_wheel", fHit_Wheel);
-    analysisManager->CreateNtupleIColumn("g4dtSimHit_sector", fHit_Sector);
-    analysisManager->CreateNtupleIColumn("g4dtSimHit_station", fHit_Station);
-    analysisManager->CreateNtupleIColumn("g4dtSimHit_superlayer", fHit_SuperLayer);
-    analysisManager->CreateNtupleIColumn("g4dtSimHit_layer", fHit_Layer);
-    analysisManager->CreateNtupleIColumn("g4dtSimHit_cell", fHit_Wire);
-    analysisManager->CreateNtupleDColumn("g4dtSimHit_xlocal", fHit_XLocal);
-    analysisManager->CreateNtupleDColumn("g4dtSimHit_ylocal", fHit_YLocal);
-    analysisManager->CreateNtupleDColumn("g4dtSimHit_zlocal", fHit_ZLocal);
-    analysisManager->CreateNtupleDColumn("g4dtSimHit_time", fHit_Time);
-    analysisManager->CreateNtupleDColumn("g4dtSimHit_edep", fHit_Edep);
-    analysisManager->CreateNtupleIColumn("g4dtSimHit_process_type", fHit_ProcessType);
+    analysisManager->CreateNtupleIColumn("simHit_nSimHits");
+    analysisManager->CreateNtupleIColumn("simHit_PDG", fHit_PDG);
+    analysisManager->CreateNtupleIColumn("simHit_q", fHit_Charge);
+    analysisManager->CreateNtupleIColumn("simHit_wheel", fHit_Wheel);
+    analysisManager->CreateNtupleIColumn("simHit_sector", fHit_Sector);
+    analysisManager->CreateNtupleIColumn("simHit_station", fHit_Station);
+    analysisManager->CreateNtupleIColumn("simHit_superlayer", fHit_SuperLayer);
+    analysisManager->CreateNtupleIColumn("simHit_layer", fHit_Layer);
+    analysisManager->CreateNtupleIColumn("simHit_cell", fHit_Wire);
+    analysisManager->CreateNtupleDColumn("simHit_xlocal", fHit_XLocal);
+    analysisManager->CreateNtupleDColumn("simHit_ylocal", fHit_YLocal);
+    analysisManager->CreateNtupleDColumn("simHit_zlocal", fHit_ZLocal);
+    analysisManager->CreateNtupleDColumn("simHit_time", fHit_Time);
+    analysisManager->CreateNtupleDColumn("simHit_edep", fHit_Edep);
+    analysisManager->CreateNtupleIColumn("simHit_process_type", fHit_ProcessType);
     // Digi columns
-    analysisManager->CreateNtupleIColumn("g4dtSimDigi_nDigis");
-    analysisManager->CreateNtupleIColumn("g4dtSimDigi_wheel", fDigi_Wheel);
-    analysisManager->CreateNtupleIColumn("g4dtSimDigi_sector", fDigi_Sector);
-    analysisManager->CreateNtupleIColumn("g4dtSimDigi_station", fDigi_Station);
-    analysisManager->CreateNtupleIColumn("g4dtSimDigi_superlayer", fDigi_SuperLayer);
-    analysisManager->CreateNtupleIColumn("g4dtSimDigi_layer", fDigi_Layer);
-    analysisManager->CreateNtupleIColumn("g4dtSimDigi_cell", fDigi_Wire);
-    analysisManager->CreateNtupleIColumn("g4dtSimDigi_TDC", fDigi_TDC);
+    analysisManager->CreateNtupleIColumn("digi_nDigis");
+    analysisManager->CreateNtupleIColumn("digi_wheel", fDigi_Wheel);
+    analysisManager->CreateNtupleIColumn("digi_sector", fDigi_Sector);
+    analysisManager->CreateNtupleIColumn("digi_station", fDigi_Station);
+    analysisManager->CreateNtupleIColumn("digi_superlayer", fDigi_SuperLayer);
+    analysisManager->CreateNtupleIColumn("digi_layer", fDigi_Layer);
+    analysisManager->CreateNtupleIColumn("digi_cell", fDigi_Wire);
+    analysisManager->CreateNtupleIColumn("digi_TDC", fDigi_TDC);
+    // Generator columns
+    analysisManager->CreateNtupleIColumn("gen_nGenParts");
+    analysisManager->CreateNtupleIColumn("gen_pdgId", fGen_PDG);
+    analysisManager->CreateNtupleIColumn("gen_charge", fGen_Charge);
+    analysisManager->CreateNtupleDColumn("gen_pt", fGen_Pt);
+    analysisManager->CreateNtupleDColumn("gen_eta", fGen_Eta);
+    analysisManager->CreateNtupleDColumn("gen_phi", fGen_Phi);
     analysisManager->FinishNtuple();
 }
 

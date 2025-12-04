@@ -42,6 +42,13 @@ class RunAction : public G4UserRunAction
     std::vector<G4int> fDigi_Layer;
     std::vector<G4int> fDigi_Wire;
     std::vector<G4int> fDigi_TDC;
+    
+    // Vector storage for generator-level data (bound to ntuple columns)
+    std::vector<G4int> fGen_PDG;
+    std::vector<G4int> fGen_Charge;
+    std::vector<G4double> fGen_Pt;
+    std::vector<G4double> fGen_Eta;
+    std::vector<G4double> fGen_Phi;
 };
 
 }

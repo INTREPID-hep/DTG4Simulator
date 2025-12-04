@@ -26,6 +26,7 @@ class EventAction : public G4UserEventAction
     
     // Helper functions for filling ntuples
     void clearVectors();
+    void fillGenBranches(const G4Event* event, G4AnalysisManager* analysisManager);
     void fillHitBranches(const G4Event* event, G4AnalysisManager* analysisManager);
     void fillDigiBranches(const G4Event* event, G4AnalysisManager* analysisManager);
 };
