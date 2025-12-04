@@ -93,7 +93,7 @@ void DriftCellDigitizer::Digitize()
     digi->SetEventID(hit->GetEventID());
     digi->SetCellID(hit->GetCellID());
     digi->SetTDC(tdc);
-    digi->SetGlobalPos(hit->GetGlobalPos());  // Copy position for visualization
+    digi->SetGlobalPos(hit->GetCellCenterPos());  // Use cell center for visualization
     
     // Add digi to collection
     fDigiCollection->insert(digi);

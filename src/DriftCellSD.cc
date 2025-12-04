@@ -89,6 +89,9 @@ G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
     hit->SetCellID(cellID);
     hit->SetLocalPos(cellStationPos);  // Position in Station frame
     hit->SetGlobalPos(worldPos);
+    // Get cell center position in world coordinates
+    G4ThreeVector cellCenter = touchable->GetHistory()->GetTopTransform().Inverse().TransformPoint(G4ThreeVector(0,0,0));
+    hit->SetCellCenterPos(cellCenter);
     hit->SetTimeDrift(timeDrift);
     hit->SetEnergyDeposit(edep);
 

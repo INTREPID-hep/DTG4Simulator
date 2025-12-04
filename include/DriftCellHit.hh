@@ -37,6 +37,7 @@ class DriftCellHit : public G4VHit
       void SetCellID(const CellID& id)    { fCellID = id; }
       void SetLocalPos(G4ThreeVector pos) { fLocalPos = pos; }
       void SetGlobalPos(G4ThreeVector pos) { fGlobalPos = pos; }
+      void SetCellCenterPos(G4ThreeVector pos) { fCellCenterPos = pos; }
       void SetTimeDrift(G4double t)       { fTimeDrift = t; }
       void SetEnergyDeposit(G4double edep) { fEnergyDeposit = edep; }
 
@@ -48,6 +49,7 @@ class DriftCellHit : public G4VHit
       CellID GetCellID() const            { return fCellID; }
       G4ThreeVector GetLocalPos() const   { return fLocalPos; }
       G4ThreeVector GetGlobalPos() const  { return fGlobalPos; }
+      G4ThreeVector GetCellCenterPos() const { return fCellCenterPos; }
       G4double GetTimeDrift() const       { return fTimeDrift; }
       G4double GetEnergyDeposit() const   { return fEnergyDeposit; }
 
@@ -59,6 +61,7 @@ class DriftCellHit : public G4VHit
       CellID fCellID;
       G4ThreeVector fLocalPos;
       G4ThreeVector fGlobalPos;
+      G4ThreeVector fCellCenterPos;
       G4double fTimeDrift;
       G4double fEnergyDeposit;
 };
