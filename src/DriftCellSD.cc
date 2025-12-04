@@ -8,10 +8,10 @@
 namespace DTSim
 {
 
-DriftCellSD::DriftCellSD(const G4String& name, const G4String& hitsCollectionName)
+DriftCellSD::DriftCellSD(const G4String& name)
   : G4VSensitiveDetector(name)
 {
-    collectionName.insert(hitsCollectionName);
+    collectionName.insert("DriftCellHitsCollection");
 }
 
 void DriftCellSD::Initialize(G4HCofThisEvent* hce)

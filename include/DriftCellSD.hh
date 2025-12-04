@@ -15,7 +15,7 @@ namespace DTSim
 class DriftCellSD : public G4VSensitiveDetector
 {
   public:
-      DriftCellSD(const G4String& name, const G4String& hitsCollectionName);
+      DriftCellSD(const G4String& name);
       ~DriftCellSD() override = default;
 
       void Initialize(G4HCofThisEvent* hce) override;

@@ -66,7 +66,7 @@ void DetectorConstruction::ConstructSDandField()
 {
     // ========== Setup Sensitive Detectors ==========
     if (!fDriftCellsLogicals.empty()) {
-        DTSim::DriftCellSD* driftCellSD = new DTSim::DriftCellSD("/DriftCellSD", "DriftCellHitsCollection");
+        DTSim::DriftCellSD* driftCellSD = new DTSim::DriftCellSD("/DriftCellSD");
         auto sdManager = G4SDManager::GetSDMpointer();
         sdManager->AddNewDetector(driftCellSD);
         
