@@ -1,5 +1,4 @@
 #include "DriftCellSD.hh"
-#include "G4AnalysisManager.hh"
 #include "G4RunManager.hh"
 #include "G4HCofThisEvent.hh"
 #include "G4Step.hh"
@@ -198,37 +197,10 @@ CellID DriftCellSD::DecodeCellID(const G4String& volumeName, G4int copyNo) const
 
 void DriftCellSD::EndOfEvent(G4HCofThisEvent* hce)
 {
+    // Optional: print summary or debug information
     G4int nHits = fHitsCollection->entries();
-    
     if (nHits > 0) {
-        G4cout << "\n=== DriftCellSD: " << nHits << " hits collected in this event ===" << G4endl;
-        
-        G4AnalysisManager *analysisManager = G4AnalysisManager::Instance();
-        
-        for (G4int i = 0; i < nHits; i++) {
-            DriftCellHit* hit = (*fHitsCollection)[i];
-            CellID cellID = hit->GetCellID();
-            G4ThreeVector localPos = hit->GetLocalPos();
-            
-            // Fill ntuple
-            analysisManager->FillNtupleIColumn(0, 0, hit->GetEventID());
-            analysisManager->FillNtupleIColumn(0, 1, hit->GetPDG());
-            analysisManager->FillNtupleIColumn(0, 2, hit->GetCharge());
-            analysisManager->FillNtupleIColumn(0, 3, cellID.wheel);
-            analysisManager->FillNtupleIColumn(0, 4, cellID.sector);
-            analysisManager->FillNtupleIColumn(0, 5, cellID.station);
-            analysisManager->FillNtupleIColumn(0, 6, cellID.superLayer);
-            analysisManager->FillNtupleIColumn(0, 7, cellID.layer);
-            analysisManager->FillNtupleIColumn(0, 8, cellID.wire);
-            analysisManager->FillNtupleDColumn(0, 9, localPos.x());
-            analysisManager->FillNtupleDColumn(0, 10, localPos.y());
-            analysisManager->FillNtupleDColumn(0, 11, localPos.z());
-            analysisManager->FillNtupleDColumn(0, 12, hit->GetTimeDrift());
-            analysisManager->FillNtupleDColumn(0, 13, hit->GetEnergyDeposit());
-            analysisManager->FillNtupleIColumn(0, 14, hit->GetProcessType());
-            
-            analysisManager->AddNtupleRow(0);
-        }
+        G4cout << "DriftCellSD: " << nHits << " hits produced" << G4endl;
     }
 }
 
