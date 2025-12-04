@@ -31,6 +31,15 @@ RunAction::RunAction()
     analysisManager->CreateNtupleDColumn("g4dtSimHit_time", fHit_Time);
     analysisManager->CreateNtupleDColumn("g4dtSimHit_edep", fHit_Edep);
     analysisManager->CreateNtupleIColumn("g4dtSimHit_process_type", fHit_ProcessType);
+    // Digi columns
+    analysisManager->CreateNtupleIColumn("g4dtSimDigi_nDigis");
+    analysisManager->CreateNtupleIColumn("g4dtSimDigi_wheel", fDigi_Wheel);
+    analysisManager->CreateNtupleIColumn("g4dtSimDigi_sector", fDigi_Sector);
+    analysisManager->CreateNtupleIColumn("g4dtSimDigi_station", fDigi_Station);
+    analysisManager->CreateNtupleIColumn("g4dtSimDigi_superlayer", fDigi_SuperLayer);
+    analysisManager->CreateNtupleIColumn("g4dtSimDigi_layer", fDigi_Layer);
+    analysisManager->CreateNtupleIColumn("g4dtSimDigi_cell", fDigi_Wire);
+    analysisManager->CreateNtupleIColumn("g4dtSimDigi_TDC", fDigi_TDC);
     analysisManager->FinishNtuple();
 }
 

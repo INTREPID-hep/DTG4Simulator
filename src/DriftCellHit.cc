@@ -46,7 +46,7 @@ void DriftCellHit::Draw()
         G4Circle circle(fGlobalPos);
         circle.SetScreenSize(4.);
         circle.SetFillStyle(G4Circle::filled);
-        G4VisAttributes attribs(G4Colour::Red());
+        G4VisAttributes attribs(G4Colour::Yellow());
         circle.SetVisAttributes(attribs);
         pVVisManager->Draw(circle);
     }

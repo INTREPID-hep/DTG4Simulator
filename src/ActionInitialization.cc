@@ -2,6 +2,8 @@
 #include "PrimaryGeneratorAction.hh"
 #include "RunAction.hh"
 #include "EventAction.hh"
+#include "DriftCellDigitizer.hh"
+#include "G4DigiManager.hh"
 
 namespace DTSim
 {
@@ -22,6 +24,11 @@ void ActionInitialization::Build() const
   
   DTSim::EventAction* eventAction = new DTSim::EventAction(runAction);
   SetUserAction(eventAction);
+  
+  // Register digitizer module
+  G4DigiManager* digiManager = G4DigiManager::GetDMpointer();
+  DTSim::DriftCellDigitizer* digitizer = new DTSim::DriftCellDigitizer("DriftCellDigitizer");
+  digiManager->AddNewModule(digitizer);
 }
 
 }

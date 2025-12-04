@@ -2,6 +2,7 @@
 #define DTSimEventAction_h 1
 
 #include "G4UserEventAction.hh"
+#include "G4AnalysisManager.hh"
 #include "globals.hh"
 
 class G4Event;
@@ -25,7 +26,8 @@ class EventAction : public G4UserEventAction
     
     // Helper functions for filling ntuples
     void clearVectors();
-    void FillHitsNtuple(const G4Event* event);
+    void fillHitBranches(const G4Event* event, G4AnalysisManager* analysisManager);
+    void fillDigiBranches(const G4Event* event, G4AnalysisManager* analysisManager);
 };
 
 }

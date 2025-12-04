@@ -33,6 +33,15 @@ class RunAction : public G4UserRunAction
     std::vector<G4double> fHit_Time;
     std::vector<G4double> fHit_Edep;
     std::vector<G4int> fHit_ProcessType;
+    
+    // Vector storage for digi data (bound to ntuple columns)
+    std::vector<G4int> fDigi_Wheel;
+    std::vector<G4int> fDigi_Sector;
+    std::vector<G4int> fDigi_Station;
+    std::vector<G4int> fDigi_SuperLayer;
+    std::vector<G4int> fDigi_Layer;
+    std::vector<G4int> fDigi_Wire;
+    std::vector<G4int> fDigi_TDC;
 };
 
 }

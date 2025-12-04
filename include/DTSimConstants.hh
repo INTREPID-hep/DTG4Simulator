@@ -11,6 +11,11 @@ namespace DTSim
 constexpr G4double kDriftVelocity = 54.0*micrometer/nanosecond;
 constexpr G4double kMinEnergyDeposit = 26.6 * eV; // Minimum energy deposit to ionize a gas mixture Ar-Co2 85:15
 
+// Digitization constants
+constexpr G4double kTDCResolution = 25.0 / 32.0 * ns;   // Standard TDC bin (25 ns / 32)
+constexpr G4double kTimeResolution = 2.0 * ns;          // Detector time resolution (sigma)
+constexpr G4double kEfficiency = 1.0;                  // 100% detection efficiency
+
 // Geometry limits
 constexpr G4int kMinWheel = -2;
 constexpr G4int kMaxWheel = 2;
