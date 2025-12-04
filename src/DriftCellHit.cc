@@ -4,6 +4,7 @@
 #include "G4UnitsTable.hh"
 #include "G4VVisManager.hh"
 #include "G4VisAttributes.hh"
+#include "DTSimTypes.hh"
 
 #include <iomanip>
 
@@ -12,9 +13,29 @@ namespace DTSim
 
 G4ThreadLocal G4Allocator<DriftCellHit>* DriftCellHitAllocator = nullptr;
 
+DriftCellHit::DriftCellHit()
+ : G4VHit(),
+   fEventID(-1),
+   fPDG(-999),
+   fCharge(-999),
+   fProcessType(-999),
+   fCellID(DTSim::CellID()),
+   fLocalPos(G4ThreeVector()),
+   fGlobalPos(G4ThreeVector()),
+   fTimeDrift(-1),
+   fEnergyDeposit(-1)
+{}
+
 G4bool DriftCellHit::operator==(const DriftCellHit& right) const
 {
-    return (this == &right) ? true : false;
+    // Two hits are equal if they match in all key physics properties
+    return (fEventID == right.fEventID && 
+            fCellID == right.fCellID &&
+            fPDG == right.fPDG &&
+            fCharge == right.fCharge &&
+            fProcessType == right.fProcessType &&
+            std::abs(fTimeDrift - right.fTimeDrift) < .1 &&  // Within .1 ns
+            std::abs(fEnergyDeposit - right.fEnergyDeposit) < 1e-6);  // Within 1 eV
 }
 
 void DriftCellHit::Draw()

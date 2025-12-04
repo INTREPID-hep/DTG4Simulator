@@ -13,7 +13,7 @@ namespace DTSim
 class DriftCellHit : public G4VHit
 {
   public:
-      DriftCellHit() = default;
+      DriftCellHit();
       DriftCellHit(const DriftCellHit&) = default;
       ~DriftCellHit() override = default;           
 

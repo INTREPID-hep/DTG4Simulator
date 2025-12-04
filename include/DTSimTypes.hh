@@ -31,6 +31,20 @@ struct CellID {
                wire >= 0;  // wire can vary, just check positive
     }
     
+    // Equality operator
+    bool operator==(const CellID& other) const {
+        return wheel == other.wheel &&
+               sector == other.sector &&
+               station == other.station &&
+               superLayer == other.superLayer &&
+               layer == other.layer &&
+               wire == other.wire;
+    }
+    
+    bool operator!=(const CellID& other) const {
+        return !(*this == other);
+    }
+    
     // Output operator for easy printing
     friend std::ostream& operator<<(std::ostream& os, const CellID& id) {
         os << "W" << id.wheel 
