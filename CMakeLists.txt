@@ -33,9 +33,13 @@ file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
 #----------------------------------------------------------------------------
 # Copy all macro scripts and geometry files to the build directory
 
-# Copy only .mac files from macros directory
-file(GLOB MACRO_FILES "${PROJECT_SOURCE_DIR}/macros/*.mac")
-file(COPY ${MACRO_FILES} DESTINATION ${CMAKE_BINARY_DIR}/)
+# Copy entire macros directory structure (including subdirectories)
+file(
+  COPY ${PROJECT_SOURCE_DIR}/macros/
+  DESTINATION ${CMAKE_BINARY_DIR}/macros
+  FILES_MATCHING 
+  PATTERN "*.mac"
+)
 
 # Copy geometry directory preserving structure, excluding unwanted files
 file(

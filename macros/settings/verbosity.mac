@@ -1,0 +1,18 @@
+# Standard verbosity settings for DTSim
+# Include this in your macros with: /control/execute macros/settings/verbosity.mac
+
+# Control verbosity
+/control/verbose 2
+/control/saveHistory
+
+# Run manager verbosity
+/run/verbose 2
+
+# Event verbosity (0=quiet, 1=summary, 2=detailed)
+/event/verbose 0
+
+# Tracking verbosity (use with care, very verbose)
+/tracking/verbose 0
+
+# Physics process verbosity (use with care, very verbose)
+# /process/verbose 0

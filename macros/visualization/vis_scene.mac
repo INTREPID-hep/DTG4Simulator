@@ -1,0 +1,23 @@
+# Scene additions for visualization
+# Include this in your macros with: /control/execute macros/visualization/vis_scene.mac
+
+# Draw coordinate axes at origin
+/vis/scene/add/axes 0 0 0 10 cm
+
+# Add event ID to display
+/vis/scene/add/eventID
+
+# Draw hits at end of event
+/vis/scene/add/hits
+
+# Draw digis at end of event
+/vis/scene/add/digis
+
+# Add magnetic field visualization (arrow spacing in cm)
+/vis/scene/add/magneticField 10
+
+# Optionally add a scale reference
+# /vis/scene/add/scale 1 cm
+
+# Superimpose all events from a given run (accumulate)
+/vis/scene/endOfEventAction accumulate

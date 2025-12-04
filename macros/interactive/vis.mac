@@ -1,0 +1,34 @@
+# Main interactive visualization macro for DTSim
+# Usage: ./exampleDTSim (without arguments)
+
+# Load standard settings
+/control/execute macros/settings/verbosity.mac
+/control/execute macros/settings/physics.mac
+
+# load gui settings
+# /control/execute macros/interactive/gui.mac
+
+# Set number of threads for parallel execution
+/run/numberOfThreads 4
+
+# Initialize kernel
+/run/initialize
+
+# Disable auto refresh and quieten vis messages whilst scene and trajectories are established
+/vis/viewer/set/autoRefresh false
+/vis/verbose errors
+
+# Setup visualization
+/control/execute macros/visualization/vis_common.mac
+/control/execute macros/visualization/vis_scene.mac
+/control/execute macros/visualization/vis_trajectories.mac
+
+# Load primary particle settings
+/control/execute macros/settings/primary.mac
+
+# Re-establish auto refreshing and verbosity
+/vis/viewer/set/autoRefresh true
+/vis/verbose warnings
+
+# Flush viewer to create initial view
+/vis/viewer/flush

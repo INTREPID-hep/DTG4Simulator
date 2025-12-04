@@ -1,0 +1,21 @@
+# High-pT muon batch run for DTSim
+# Usage: ./exampleDTSim -m macros/batch/run_highpt.mac
+
+# Load standard settings
+/control/execute macros/settings/verbosity.mac
+/control/execute macros/settings/physics.mac
+
+# Set number of threads for parallel execution
+/run/numberOfThreads 4
+
+# Initialize kernel
+/run/initialize
+
+# Override primary settings for high-pT muons
+/DTSim/generator/randomizePrimary false
+/DTSim/generator/momentum 1000 GeV
+/gun/particle mu+
+/gun/position 0. 0. -0.25 m
+
+# Run simulation
+/run/beamOn 100

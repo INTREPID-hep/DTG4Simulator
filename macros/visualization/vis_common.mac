@@ -1,0 +1,17 @@
+# Common visualization settings for DTSim
+# Include this in your macros with: /control/execute macros/visualization/vis_common.mac
+
+# Open a viewer (OGL = OpenGL)
+/vis/open OGL 600x600-0+0
+
+# Specify view angle (theta, phi in degrees)
+/vis/viewer/set/viewpointThetaPhi 0. 0.
+
+# Specify zoom value
+/vis/viewer/zoom 1.6
+
+# Specify style (surface or wireframe)
+/vis/viewer/set/style wireframe
+
+# Draw geometry
+/vis/drawVolume

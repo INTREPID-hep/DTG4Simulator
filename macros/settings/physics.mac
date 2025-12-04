@@ -1,0 +1,32 @@
+# Physics settings for DTSim
+# Include this in your macros with: /control/execute macros/settings/physics.mac
+
+# Physics cuts (production thresholds for secondary particles)
+# Smaller cuts = more accurate but slower simulation
+# Larger cuts = faster but less detail in secondary particle production
+# Default is typically 0.7 mm (1 mm in some physics lists)
+# /run/setCut 0.1 mm
+
+# Set region-specific cuts for fine control
+# Use smaller cuts in sensitive detectors, larger in passive material
+# /run/setCutForRegion <region_name> 0.01 mm
+
+# Set cuts for specific particles (overrides global cut)
+# /run/setCutForAGivenParticle e- 0.05 mm
+# /run/setCutForAGivenParticle e+ 0.05 mm
+# /run/setCutForAGivenParticle gamma 0.1 mm
+# /run/setCutForAGivenParticle proton 0.1 mm
+
+# Particle-specific cuts in a region
+# /run/setCutForRegionAndParticle <region_name> e- 0.01 mm
+
+# Apply cuts to specific materials (energy threshold)
+# /run/setCutForMaterial <material_name> 0.05 mm
+
+# Tracking cuts (stop tracking below these energies)
+# Useful to speed up simulation by killing low-energy particles
+# /cuts/setLowEdge 1 keV
+
+# Maximum step length in a region (for accurate field tracking)
+# Important for magnetic field regions
+# /run/setMaxStepSize <region_name> 0.1 mm

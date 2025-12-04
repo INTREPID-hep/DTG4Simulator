@@ -45,7 +45,7 @@ int main(int argc,char** argv)
 {
   // Setup command-line parser (singleton for access in Geant4 classes)
   auto* parser = DTSim::CommandLineParser::Instance();
-  parser->AddOption("-m,--macro", "Macro file to execute", false, "vis.mac");
+  parser->AddOption("-m,--macro", "Macro file to execute", false, "macros/interactive/vis.mac");
   parser->AddFlag("-b,--batch", "Run in batch mode (non-interactive)");
   parser->AddFlag("-B,--magnetic-field", "Include magnetic field in detector");
   
@@ -61,7 +61,7 @@ int main(int argc,char** argv)
   G4String macroFileName = parser->GetOption("-m");
 
   // Validate batch mode requirements
-  if (batchMode && macroFileName == "vis.mac") {
+  if (batchMode && macroFileName == "macros/interactive/vis.mac") {
     G4cerr << "Error: Batch mode (-b) requires a macro file specified with -m" << G4endl;
     DTSim::CommandLineParser::DeleteInstance();
     return 1;
@@ -80,9 +80,7 @@ int main(int argc,char** argv)
 
   // Construct the default run manager
   //
-  auto runManager =
-    G4RunManagerFactory::CreateRunManager(G4RunManagerType::Default);
-  runManager->SetNumberOfThreads(4);
+  auto runManager = G4RunManagerFactory::CreateRunManager();
   
   // ------------- Mandatory user initialization classes ---------------
   // Physics list

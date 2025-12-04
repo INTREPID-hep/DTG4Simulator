@@ -1,7 +1,0 @@
-/run/numberOfThreads 4
-
-/run/initialize
-
-/DTSim/generator/randomizePrimary 0
-/DTSim/generator/momentum 1000 GeV
-/run/beamOn 10

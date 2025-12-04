@@ -1,0 +1,31 @@
+# Trajectory visualization settings for DTSim
+# Include this in your macros with: /control/execute macros/visualization/vis_trajectories.mac
+
+# Draw smooth trajectories at end of event
+/vis/scene/add/trajectories smooth
+
+# Filter trajectories - draw only specific particles
+# Uncomment to enable particle filtering
+# /vis/filtering/trajectories/create/particleFilter
+# /vis/filtering/trajectories/particleFilter-0/add gamma
+# To invert the filter (draw all EXCEPT specified particles):
+# /vis/filtering/trajectories/particleFilter-0/invert true
+
+# Color trajectories by particle ID
+/vis/modeling/trajectories/create/drawByParticleID
+/vis/modeling/trajectories/drawByParticleID-0/set e- yellow
+/vis/modeling/trajectories/drawByParticleID-0/set e+ yellow
+/vis/modeling/trajectories/drawByParticleID-0/set mu- cyan
+/vis/modeling/trajectories/drawByParticleID-0/set mu+ cyan
+/vis/modeling/trajectories/drawByParticleID-0/set gamma green
+/vis/modeling/trajectories/drawByParticleID-0/set pi+ magenta
+/vis/modeling/trajectories/drawByParticleID-0/set pi- magenta
+/vis/modeling/trajectories/drawByParticleID-0/set pi0 magenta
+/vis/modeling/trajectories/drawByParticleID-0/set proton pink
+/vis/modeling/trajectories/drawByParticleID-0/set neutron grey
+/vis/modeling/trajectories/drawByParticleID-0/set alpha blue
+
+# Draw step points
+/vis/modeling/trajectories/drawByParticleID-0/default/setDrawStepPts true
+/vis/modeling/trajectories/drawByParticleID-0/default/setStepPtsColour white
+/vis/modeling/trajectories/drawByParticleID-0/default/setStepPtsSize 3
