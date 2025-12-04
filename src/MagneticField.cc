@@ -1,8 +1,9 @@
 #include "MagneticField.hh"
+
 #include "G4SystemOfUnits.hh"
 #include "G4ThreeVector.hh"
+
 #include "DTSimConstants.hh"
-//#include <cmath>
 
 namespace DTSim
 {

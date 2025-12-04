@@ -1,12 +1,14 @@
 #include "DriftCellDigitizer.hh"
-#include "DriftCellHit.hh"
-#include "DTSimConstants.hh"
+
 #include "G4DigiManager.hh"
 #include "G4RunManager.hh"
 #include "G4HCofThisEvent.hh"
 #include "G4Event.hh"
 #include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
+
+#include "DriftCellHit.hh"
+#include "DTSimConstants.hh"
 
 namespace DTSim
 {

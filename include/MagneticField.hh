@@ -2,7 +2,7 @@
 #define DTSimMagneticField_hh 1
 
 #include "G4MagneticField.hh"
-#include "G4UniformMagField.hh"
+#include "G4Types.hh"
 
 namespace DTSim
 {

@@ -1,14 +1,15 @@
 #include "EventAction.hh"
-#include "RunAction.hh"
-#include "DriftCellHit.hh"
-#include "DriftCellDigi.hh"
-#include "DriftCellDigitizer.hh"
+
 #include "G4Event.hh"
 #include "G4HCofThisEvent.hh"
 #include "G4DCofThisEvent.hh"
 #include "G4SDManager.hh"
 #include "G4DigiManager.hh"
-#include "G4AnalysisManager.hh"
+
+#include "RunAction.hh"
+#include "DriftCellHit.hh"
+#include "DriftCellDigi.hh"
+#include "DriftCellDigitizer.hh"
 
 namespace DTSim
 {

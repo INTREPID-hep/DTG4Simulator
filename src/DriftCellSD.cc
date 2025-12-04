@@ -1,9 +1,14 @@
 #include "DriftCellSD.hh"
+
 #include "G4RunManager.hh"
 #include "G4HCofThisEvent.hh"
 #include "G4Step.hh"
 #include "G4SDManager.hh"
+#include "G4SystemOfUnits.hh"
+#include "G4UnitsTable.hh"
 #include <sstream>
+
+#include "DTSimConstants.hh"
 
 namespace DTSim
 {

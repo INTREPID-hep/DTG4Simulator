@@ -2,15 +2,14 @@
 #define DTSimPrimaryGeneratorAction_h 1
 
 #include "G4VUserPrimaryGeneratorAction.hh"
-#include "globals.hh"
-#include "DTSimConstants.hh"
-
-#include <CLHEP/Units/SystemOfUnits.h>
+#include "G4Types.hh"
 
 class G4ParticleGun;
 class G4GenericMessenger;
 class G4Event;
 class G4ParticleDefinition;
+
+#include "DTSimConstants.hh"
 
 namespace DTSim
 {

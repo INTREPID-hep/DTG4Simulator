@@ -5,6 +5,7 @@
 #include "G4THitsCollection.hh"
 #include "G4Allocator.hh"
 #include "G4ThreeVector.hh"
+
 #include "DTSimTypes.hh"
 
 namespace DTSim

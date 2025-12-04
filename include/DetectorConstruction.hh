@@ -2,9 +2,6 @@
 #define DTSimDetectorConstruction_h 1
 
 #include "G4VUserDetectorConstruction.hh"
-#include "globals.hh"
-#include "G4FieldManager.hh"
-#include "MagneticField.hh"
 #include <vector>
 
 class G4VPhysicalVolume;

@@ -1,5 +1,5 @@
 #include "DetectorConstruction.hh"
-#include "CommandLineParser.hh"
+
 #include "G4Material.hh"
 #include "G4NistManager.hh"
 #include "G4Box.hh"
@@ -14,10 +14,12 @@
 #include "G4LogicalVolumeStore.hh"
 #include "G4String.hh"
 #include "G4SDManager.hh"
-#include "DriftCellSD.hh"
-#include "DTSimConstants.hh"
 #include "G4FieldBuilder.hh"
 #include "G4UniformMagField.hh"
+
+#include "CommandLineParser.hh"
+#include "DriftCellSD.hh"
+#include "DTSimConstants.hh"
 
 namespace DTSim
 {

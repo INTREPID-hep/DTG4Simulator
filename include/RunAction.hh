@@ -1,7 +1,8 @@
 #ifndef RunAction_hh
-#define RunAction_hh
+#define RunAction_hh 1
 
 #include "G4UserRunAction.hh"
+#include "G4Types.hh"
 #include <vector>
 
 class G4Run;

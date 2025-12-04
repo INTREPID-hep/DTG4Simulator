@@ -1,9 +1,11 @@
 #include "ActionInitialization.hh"
+
+#include "G4DigiManager.hh"
+
 #include "PrimaryGeneratorAction.hh"
 #include "RunAction.hh"
 #include "EventAction.hh"
 #include "DriftCellDigitizer.hh"
-#include "G4DigiManager.hh"
 
 namespace DTSim
 {

@@ -3,7 +3,6 @@
 
 #include "G4UserEventAction.hh"
 #include "G4AnalysisManager.hh"
-#include "globals.hh"
 
 class G4Event;
 

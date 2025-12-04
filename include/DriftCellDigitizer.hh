@@ -2,8 +2,10 @@
 #define DTSimDriftCellDigitizer_hh 1
 
 #include "G4VDigitizerModule.hh"
+#include "G4String.hh"
+#include "G4Types.hh"
+
 #include "DriftCellDigi.hh"
-#include "globals.hh"
 
 namespace DTSim
 {
