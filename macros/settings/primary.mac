@@ -6,10 +6,10 @@
 /DTSim/generator/momentum 300 GeV
 
 # Set momentum spread/sigma (default: 0 MeV)
-/DTSim/generator/sigmaMomentum 0 MeV
+/DTSim/generator/sigmaMomentum 100 MeV
 
 # Set angular divergence/spread (default: 0 degrees)
-/DTSim/generator/sigmaAngle 0 deg
+/DTSim/generator/sigmaAngle 5 deg
 
 # Randomize primary particle type (true/false)
 # If true, randomly selects from: e+, mu+, pi+, kaon+, proton

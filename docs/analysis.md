@@ -6,28 +6,60 @@ El proyecto usa `G4AnalysisManager` para salida en formato ROOT. El NTuple se al
 
 ## NTuple: DTG4Tree
 
-El árbol contiene 14 columnas con información completa de cada hit:
+El árbol `DTG4Tree` almacena la información **por evento**. A diferencia de versiones anteriores, se utilizan `std::vector` para almacenar múltiples hits, digis y partículas generadas dentro de una sola entrada (fila) del TTree.
 
-| ID | Nombre | Tipo | Unidad | Descripción |
-|----|--------|------|--------|-------------|
-| 0 | `g4dtsimHit_eventNumber` | I | - | Número de evento |
-| 1 | `g4dtsimHit_PDG` | I | - | Código PDG de la partícula |
-| 2 | `g4dtsimHit_q` | I | e | Carga eléctrica |
-| 3 | `g4dtsimHit_wheel` | I | - | Wheel (-2 a +2) |
-| 4 | `g4dtsimHit_sector` | I | - | Sector (1 a 14) |
-| 5 | `g4dtsimHit_station` | I | - | Station (1 a 4) |
-| 6 | `g4dtsimHit_superlayer` | I | - | SuperLayer (1 a 3) |
-| 7 | `g4dtsimHit_layer` | I | - | Layer (1 a 4) |
-| 8 | `g4dtsimHit_cell` | I | - | Wire (1 a ~60) |
-| 9 | `g4dtsimHit_xlocal` | D | mm | Posición local X (drift) |
-| 10 | `g4dtsimHit_ylocal` | D | mm | Posición local Y (wire) |
-| 11 | `g4dtsimHit_zlocal` | D | mm | Posición local Z (capa) |
-| 12 | `g4dtsimHit_timewithdrift` | D | ns | Tiempo con corrección de drift |
-| 13 | `g4dtsimHit_edep` | D | MeV | Energía depositada |
+### Estructura de Ramas (Branches)
 
-**Tipos**:
-- `I`: Integer (G4int)
-- `D`: Double (G4double)
+El árbol se divide en tres categorías principales:
+
+#### 1. Información del Evento
+| Nombre | Tipo | Descripción |
+|--------|------|-------------|
+| `event_eventNumber` | Int | Número de identificación del evento |
+
+#### 2. Generador (Truth Level)
+Prefijo: `gen_`
+| Nombre | Tipo | Descripción |
+|--------|------|-------------|
+| `gen_nGenParts` | Int | Número de partículas primarias generadas |
+| `gen_pdgId` | Vector\<Int> | Código PDG de la partícula |
+| `gen_charge` | Vector\<Int> | Carga eléctrica |
+| `gen_pt` | Vector\<Double> | Momento transversal ($p_T$) [GeV] |
+| `gen_eta` | Vector\<Double> | Pseudorapidez ($\eta$) |
+| `gen_phi` | Vector\<Double> | Ángulo azimutal ($\phi$) [rad] |
+
+#### 3. SimHits (Geant4 Hits)
+Prefijo: `simHit_`
+| Nombre | Tipo | Descripción |
+|--------|------|-------------|
+| `simHit_nSimHits` | Int | Número total de hits en el evento |
+| `simHit_PDG` | Vector\<Int> | Código PDG de la partícula que causó el hit |
+| `simHit_q` | Vector\<Int> | Carga de la partícula |
+| `simHit_wheel` | Vector\<Int> | ID de Wheel (-2 a +2) |
+| `simHit_sector` | Vector\<Int> | ID de Sector (1 a 14) |
+| `simHit_station` | Vector\<Int> | ID de Station (1 a 4) |
+| `simHit_superlayer` | Vector\<Int> | ID de SuperLayer (1 a 3) |
+| `simHit_layer` | Vector\<Int> | ID de Layer (1 a 4) |
+| `simHit_cell` | Vector\<Int> | Número de Wire |
+| `simHit_xlocal` | Vector\<Double> | Posición X local (dirección de drift) [mm] |
+| `simHit_ylocal` | Vector\<Double> | Posición Y local (a lo largo del wire) [mm] |
+| `simHit_zlocal` | Vector\<Double> | Posición Z local [mm] |
+| `simHit_time` | Vector\<Double> | Tiempo global + drift [ns] |
+| `simHit_edep` | Vector\<Double> | Energía depositada [MeV] |
+| `simHit_process_type` | Vector\<Int> | Tipo de proceso físico (Geant4 code) |
+
+#### 4. Digis (Digitalización)
+Prefijo: `digi_`
+| Nombre | Tipo | Descripción |
+|--------|------|-------------|
+| `digi_nDigis` | Int | Número de digis creados |
+| `digi_wheel` | Vector\<Int> | ID de Wheel |
+| `digi_sector` | Vector\<Int> | ID de Sector |
+| `digi_station` | Vector\<Int> | ID de Station |
+| `digi_superlayer` | Vector\<Int> | ID de SuperLayer |
+| `digi_layer` | Vector\<Int> | ID de Layer |
+| `digi_cell` | Vector\<Int> | Número de Wire |
+| `digi_TDC` | Vector\<Int> | Valor TDC (Time-to-Digital Converter) |
 
 ### Códigos PDG Comunes
 
@@ -47,8 +79,8 @@ El árbol contiene 14 columnas con información completa de cada hit:
 
 ## Llenado del NTuple
 
-Cada hit en `DriftCellSD::EndOfEvent()` genera una fila en el NTuple, llenando las 14 columnas con la información del hit (evento, PDG, carga, geometría, posición, tiempo, energía).
+Cada evento en `RunAction::EndOfEventAction()` genera una fila en el NTuple. Los vectores se limpian al inicio de cada evento y se llenan con los hits y digis acumulados.
 
 ## Archivos de Salida
 
-Los archivos ROOT se nombran `DTG4Simulation_{runID}.root` (ej: `DTG4Simulation_0.root`). Internamente contienen el directorio `DTG4SimNTuple/` con el TTree `DTG4Tree` y sus 14 branches.
+Los archivos ROOT se nombran `DTG4Simulation_{runID}.root` (ej: `DTG4Simulation_0.root`). Internamente contienen el directorio `DTG4SimNTuple/` con el TTree `DTG4Tree`.

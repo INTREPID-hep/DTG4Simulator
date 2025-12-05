@@ -26,10 +26,14 @@ cmake .. && make -j$(nproc)
 
 ## Salida de Datos
 
-Archivos ROOT `DTG4Simulation_{runID}.root` con NTuple `DTG4SimNTuple/DTG4Tree` (14 columnas):
-- **Identificación**: eventNumber, PDG, q, wheel, sector, station, superlayer, layer, cell
-- **Posición**: xlocal, ylocal, zlocal [mm]
-- **Física**: timewithdrift [ns], edep [MeV]
+Archivos ROOT `DTG4Simulation_{runID}.root` con NTuple `DTG4SimNTuple/DTG4Tree`.
+La estructura es **basada en vectores** (una fila por evento) y contiene tres colecciones principales:
+
+- **Gen**: Información del generador (`gen_pt`, `gen_eta`, `gen_pdgId`...)
+- **SimHits**: Hits de Geant4 (`simHit_wheel`, `simHit_xlocal`, `simHit_time`...)
+- **Digis**: Señales digitalizadas (`digi_wheel`, `digi_TDC`...)
+
+Para la lista completa de variables, ver [docs/analysis.md](docs/analysis.md).
 
 ## Documentación Técnica
 
@@ -37,6 +41,7 @@ Archivos ROOT `DTG4Simulation_{runID}.root` con NTuple `DTG4SimNTuple/DTG4Tree` 
 - **[Geometría](docs/geometry.md)**: Generación desde Python con mplDTs, formato Text Geometry
 - **[Primary Generator](docs/primary_generation.md)**: Configuración del particle gun, comandos UI
 - **[Sensitive Detectors](docs/sensitive_detectors.md)**: DriftCellSD, decodificación de CellID, drift time
+- **[Digitalización](docs/digitization.md)**: Simulación de electrónica, eficiencia, resolución temporal
 - **[Análisis](docs/analysis.md)**: Estructura del NTuple
 ## Modificar Geometría
 
@@ -61,7 +66,7 @@ DTG4Simulator/
 ├── exampleDTSim.cc          # Main
 ├── include/src/             # Headers e implementaciones
 ├── geometry/                # Scripts Python + archivos .tg
-├── macros/                  # vis.mac, run.mac, gui.mac
+├── macros/                  # Macros organizados (batch, interactive, settings, visualization)
 ├── docs/                    # Documentación técnica detallada
 └── build/                   # Compilación
 ```

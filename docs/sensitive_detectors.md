@@ -45,22 +45,9 @@ Ejemplo: encoding [60, 60, 59, 59], copyNo=125 → layer=3, wire=5.
 
 ### NTuple ROOT
 
-Los hits se almacenan en un TTree con las siguientes columnas:
-- `g4dtsimHit_eventNumber`: Número de evento
-- `g4dtsimHit_PDG`: Código PDG de la partícula
-- `g4dtsimHit_q`: Carga de la partícula
-- `g4dtsimHit_wheel`: ID de wheel (-2 a 2)
-- `g4dtsimHit_sector`: ID de sector (1-14)
-- `g4dtsimHit_station`: ID de station (1-4)
-- `g4dtsimHit_superlayer`: ID de superlayer (1-3)
-- `g4dtsimHit_layer`: ID de layer (1-4)
-- `g4dtsimHit_cell`: Número de wire en la layer
-- `g4dtsimHit_xlocal`: Posición X en marco de Station (cm)
-- `g4dtsimHit_ylocal`: Posición Y en marco de Station (cm)
-- `g4dtsimHit_zlocal`: Posición Z en marco de Station (cm)
-- `g4dtsimHit_timewithdrift`: Tiempo incluyendo deriva (ns)
-- `g4dtsimHit_edep`: Energía depositada (MeV)
-- `g4dtsimHit_processType`: Tipo de proceso físico (código Geant4)
+La información de los hits procesados por `DriftCellSD` se almacena en el árbol `DTG4Tree` bajo el prefijo `simHit_`.
+
+El formato de salida utiliza vectores para almacenar múltiples hits por evento. Para una descripción detallada de todas las columnas disponibles, consultar la documentación de análisis: **docs/analysis.md**.
 
 ## Múltiples Hits por Celda
 
