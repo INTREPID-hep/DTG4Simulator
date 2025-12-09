@@ -10,6 +10,7 @@ namespace DTSim
 // Drift tube physical constants
 constexpr G4double kDriftVelocity = 54.0*micrometer/nanosecond;
 constexpr G4double kMinEnergyDeposit = 26.6 * eV; // Minimum energy deposit to ionize a gas mixture Ar-Co2 85:15
+constexpr G4double kCellBarrierEnergy = 2.1 * keV; // Energy barrier (q*DeltaV) for electrons to escape the cell field
 
 // Digitization constants
 constexpr G4double kTDCResolution = 25.0 / 32.0 * ns;   // Standard TDC bin (25 ns / 32)

@@ -32,11 +32,11 @@ void DriftCellSD::Initialize(G4HCofThisEvent* hce)
 
 G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
 {
-    // Don't create hit if neutral particle or energy below threshold
-    auto charge = step->GetTrack()->GetDefinition()->GetPDGCharge();
-    auto edep = step->GetTotalEnergyDeposit();
+    // Apply electrostatic confinement (trap low energy electrons)
+    ApplyElectrostaticConfinement(step);
 
-    if (charge == 0 || edep < DTSim::kMinEnergyDeposit) return true;
+    // Apply hit filters
+    if (!PassHitCriteria(step)) return true;
 
     auto preStepPoint = step->GetPreStepPoint();
     auto postStepPoint = step->GetPostStepPoint();
@@ -74,7 +74,9 @@ G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
     auto timeDrift = midTime + radialDistance / kDriftVelocity;
         
     // Get other particle properties
+    auto charge = step->GetTrack()->GetDefinition()->GetPDGCharge();
     auto pdgID  = step->GetTrack()->GetDefinition()->GetPDGEncoding();
+    auto edep = step->GetTotalEnergyDeposit();
     const G4VProcess* process = step->GetPostStepPoint()->GetProcessDefinedStep();
     G4int processType = process ? process->GetProcessType() : -999;
     // Get current event ID
@@ -100,6 +102,32 @@ G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
     fHitsCollection->insert(hit);
 
     return true;
+}
+
+void DriftCellSD::ApplyElectrostaticConfinement(G4Step* step)
+{
+    G4Track* track = step->GetTrack();
+    
+    // Only apply to negative charged particles
+    // Only apply to secondaries (TrackID > 1) to avoid killing primary muons
+    if (track->GetDefinition()->GetPDGCharge() < 0.0 && track->GetTrackID() > 1) {
+        
+        G4double kineticEnergy = track->GetKineticEnergy();
+
+        if (kineticEnergy < DTSim::kCellBarrierEnergy) {
+            // The electron is trapped by the anode potential.
+            // It cannot escape the cell.
+            
+            // Kill the track so it doesn't propagate to neighbors
+            track->SetTrackStatus(fStopAndKill);
+            
+            // The remaining kinetic energy is dissipated in the gas of THIS cell.
+            // So, we add it to the energy deposit of the current step.
+            step->AddTotalEnergyDeposit(kineticEnergy);
+
+            track->SetKineticEnergy(0.0);
+        }
+    }
 }
 
 CellID DriftCellSD::DecodeCellID(const G4String& volumeName, G4int copyNo) const
@@ -161,6 +189,19 @@ CellID DriftCellSD::DecodeCellID(const G4String& volumeName, G4int copyNo) const
     
     G4cerr << "Warning: CopyNo " << copyNo << " out of range for " << volumeName << G4endl;
     return cellID;
+}
+
+bool DriftCellSD::PassHitCriteria(const G4Step* step) const
+{
+    // Filter: Neutral particles
+    auto charge = step->GetTrack()->GetDefinition()->GetPDGCharge();
+    if (charge == 0) return false;
+    
+    // Filter: Energy deposition threshold
+    auto edep = step->GetTotalEnergyDeposit();
+    if (edep < DTSim::kMinEnergyDeposit) return false;
+
+    return true;
 }
 
 void DriftCellSD::EndOfEvent(G4HCofThisEvent* hce)

@@ -26,6 +26,8 @@ class DriftCellSD : public G4VSensitiveDetector
 
   private:
       CellID DecodeCellID(const G4String& volumeName, G4int copyNo) const;
+      bool PassHitCriteria(const G4Step* step) const;
+      void ApplyElectrostaticConfinement(G4Step* step);
 
       DriftCellHitsCollection* fHitsCollection = nullptr;
 };
