@@ -27,11 +27,12 @@ cmake .. && make -j$(nproc)
 ## Salida de Datos
 
 Archivos ROOT `DTG4Simulation_{runID}.root` con NTuple `DTG4SimNTuple/DTG4Tree`.
-La estructura es **basada en vectores** (una fila por evento) y contiene tres colecciones principales:
+La estructura es **basada en vectores** (una fila por evento) y contiene cuatro colecciones principales:
 
 - **Gen**: Información del generador (`gen_pt`, `gen_eta`, `gen_pdgId`...)
 - **SimHits**: Hits de Geant4 (`simHit_wheel`, `simHit_xlocal`, `simHit_time`...)
 - **Digis**: Señales digitalizadas (`digi_wheel`, `digi_TDC`...)
+- **Muon Segments**: Trayectorias de muones por estación (`seg_wheel`, `seg_localPosX`, `seg_localDirX`...)
 
 Para la lista completa de variables, ver [docs/analysis.md](docs/analysis.md).
 

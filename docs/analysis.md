@@ -61,6 +61,35 @@ Prefijo: `digi_`
 | `digi_cell` | Vector\<Int> | Número de Wire |
 | `digi_TDC` | Vector\<Int> | Valor TDC (Time-to-Digital Converter) |
 
+#### 5. Muon Segments (Segmentos de Muones)
+Prefijo: `seg_`
+
+Los **Muon Segments** capturan la trayectoria de los muones a través de cada estación DT, calculados a partir de los puntos de entrada y salida.
+
+| Nombre | Tipo | Descripción |
+|--------|------|-------------|
+| `seg_nSegments` | Int | Número de segmentos creados (uno por estación atravesada) |
+| `seg_wheel` | Vector\<Int> | ID de Wheel (-2 a +2) |
+| `seg_sector` | Vector\<Int> | ID de Sector (1 a 14) |
+| `seg_station` | Vector\<Int> | ID de Station (1 a 4) |
+| `seg_localPosX` | Vector\<Double> | Posición X del punto medio en coordenadas de la estación [mm] |
+| `seg_localPosY` | Vector\<Double> | Posición Y del punto medio en coordenadas de la estación [mm] |
+| `seg_localPosZ` | Vector\<Double> | Posición Z del punto medio en coordenadas de la estación [mm] |
+| `seg_localDirX` | Vector\<Double> | Componente X de la dirección unitaria (local) |
+| `seg_localDirY` | Vector\<Double> | Componente Y de la dirección unitaria (local) |
+| `seg_localDirZ` | Vector\<Double> | Componente Z de la dirección unitaria (local) |
+| `seg_globalPosX` | Vector\<Double> | Posición X del punto medio en coordenadas globales (CMS) [mm] |
+| `seg_globalPosY` | Vector\<Double> | Posición Y del punto medio en coordenadas globales [mm] |
+| `seg_globalPosZ` | Vector\<Double> | Posición Z del punto medio en coordenadas globales [mm] |
+| `seg_globalDirX` | Vector\<Double> | Componente X de la dirección unitaria (global) |
+| `seg_globalDirY` | Vector\<Double> | Componente Y de la dirección unitaria (global) |
+| `seg_globalDirZ` | Vector\<Double> | Componente Z de la dirección unitaria (global) |
+
+**Nota sobre cálculo**: 
+- Posición = (entryPos + exitPos) / 2
+- Dirección = (exitPos - entryPos).unit()
+- Solo se registran muones (PDG = ±13) que completan el paso por la estación
+
 ### Códigos PDG Comunes
 
 | PDG | Partícula | Descripción |

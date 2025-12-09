@@ -2,7 +2,12 @@
 
 ## Arquitectura de Detección
 
-El proyecto usa un único Sensitive Detector (`DriftCellSD`) para todas las celdas de drift, asignado a todos los volúmenes lógicos cuyo nombre contiene `"DriftCell"`. Los hits se recolectan en una sola colección por evento (`DriftCellHitsCollection`).
+El proyecto utiliza dos Sensitive Detectors para capturar información de simulación:
+
+1. **DriftCellSD**: Asignado a volúmenes `DriftCell_*`, registra hits individuales con energía depositada en cada celda de drift
+2. **StationSD**: Asignado a volúmenes `Station_*`, registra segmentos de muones que atraviesan estaciones completas
+
+Los hits se recolectan en colecciones separadas por evento: `DriftCellHitsCollection` y `DTSegmentCollection`.
 
 ## Clase DriftCellHit
 
@@ -56,3 +61,67 @@ El sistema registra múltiples hits en la misma celda si: la partícula atravies
 ## Validación del CellID
 
 El método `CellID::isValid()` verifica que todos los campos estén dentro de los rangos permitidos (wheel: -2 a 2, sector: 1-14, station: 1-4, superlayer: 1-3, layer: 1-4, wire ≥ 0). Si la decodificación falla, se genera un warning y el hit no se registra (retorna false).
+
+---
+
+## Clase DTSegment (Muon Segments)
+
+Los **Muon Segments** capturan la trayectoria de muones que atraviesan estaciones completas. A diferencia de los hits individuales en celdas, los segmentos representan la trayectoria promedio del muón a través de toda la estación.
+
+Cada segmento almacena:
+- **StationID**: Identificación de la estación (wheel, sector, station)
+- **Posición y dirección local**: En el sistema de coordenadas de la estación
+- **Posición y dirección global**: En el sistema de coordenadas mundial (CMS)
+- **Puntos de entrada/salida**: Para visualización solamente
+
+El struct `StationID` contiene: wheel (-2 a +2), sector (1-14), station (1-4). Incluye validación mediante `isValid()`.
+
+## Procesamiento de Segmentos: StationSD::ProcessHits()
+
+El método `ProcessHits()` de `StationSD` rastrea muones (PDG = ±13) a través de las estaciones:
+
+1. **Detección de entrada**: 
+   - Al primer hit en una estación, guarda la posición de entrada
+   - Utiliza un mapa `std::map<G4int, G4ThreeVector>` indexado por TrackID
+   - Almacena una copia del valor
+
+2. **Detección de salida**:
+   - Identifica cuando el muón sale de la estación (volumen siguiente es "world" o "Yoke")
+   - Recupera la posición de entrada del mapa
+
+3. **Cálculo del segmento**:
+   - **Posición**: Punto medio entre entrada y salida: `pos = (entry + exit) / 2`
+   - **Dirección**: Vector unitario de entrada a salida: `dir = (exit - entry).unit()`
+   - Transforma ambos a coordenadas locales de la estación
+4. **Decodificación del StationID**:
+   - Extrae wheel, sector, station del nombre del volumen: `"Station_W0_Sec1_St1"`
+   - Utiliza la función utilitaria `ExtractIntAfterToken()` para parsing
+
+5. **Registro**: Crea objeto `DTSegment` y lo inserta en `DTSegmentCollection`
+
+El enfoque entry/exit captura la **trayectoria promedio efectiva** que mejor representa el paso del muón a través de la estación completa, en lugar de solo la dirección instantánea al entrar.
+
+### Gestión de Memoria
+
+- El mapa de entrada se limpia automáticamente al final de cada evento
+- Los casos donde muones entran pero no salen (mueren dentro de la estación) se manejan en `EndOfEvent()`
+
+## Utilidad: ExtractIntAfterToken()
+
+El módulo `DTSimUtils` proporciona funciones auxiliares para parsear nombres de volúmenes:
+
+```cpp
+G4int ExtractIntAfterToken(const G4String& str, const G4String& token, size_t startPos = 0);
+```
+
+Esta función extrae valores enteros después de tokens específicos (ej: `"_W"`, `"_Sec"`, `"_St"`), reduciendo código repetitivo de parsing. Se utiliza en ambos `DriftCellSD` y `StationSD`.
+
+## Salida de Datos
+
+### NTuple ROOT
+
+La información de hits y segmentos se almacena en el árbol `DTG4Tree`:
+- **SimHits** (DriftCellSD): Prefijo `simHit_` - hits individuales con energía depositada
+- **Muon Segments** (StationSD): Prefijo `seg_` - trayectorias de muones por estación
+
+El formato utiliza vectores para múltiples hits/segmentos por evento. Ver **docs/analysis.md** para descripción completa de todas las columnas.
