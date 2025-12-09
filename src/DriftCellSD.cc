@@ -1,4 +1,5 @@
 #include "DriftCellSD.hh"
+#include "DTSimUtils.hh"
 
 #include "G4RunManager.hh"
 #include "G4HCofThisEvent.hh"
@@ -108,57 +109,16 @@ CellID DriftCellSD::DecodeCellID(const G4String& volumeName, G4int copyNo) const
     // Volume name format: DriftCell_W{wheel}_Sec{sector}_St{station}_SL{sl}_{encoding}
     // Example: DriftCell_W-1_Sec1_St2_SL1_60605959
 
-    size_t pos = 0;
+    // Extract common station identification using utility function
+    cellID.wheel = ExtractIntAfterToken(volumeName, "_W");
+    cellID.sector = ExtractIntAfterToken(volumeName, "_Sec");
+    cellID.station = ExtractIntAfterToken(volumeName, "_St");
+    cellID.superLayer = ExtractIntAfterToken(volumeName, "_SL");
     
-    // Extract wheel
-    pos = volumeName.find("_W");
-    if (pos != std::string::npos) {
-        pos += 2;  // Skip "_W"
-        size_t endPos = volumeName.find("_", pos);
-        G4String wheelStr = volumeName.substr(pos, endPos - pos);
-        cellID.wheel = std::stoi(wheelStr);
-        pos = endPos;
-    } else {
-        G4cerr << "Warning: Could not parse wheel from " << volumeName << G4endl;
-        return cellID;
-    }
-    
-    // Extract sector
-    pos = volumeName.find("_Sec", pos);
-    if (pos != std::string::npos) {
-        pos += 4;  // Skip "_Sec"
-        size_t endPos = volumeName.find("_", pos);
-        G4String sectorStr = volumeName.substr(pos, endPos - pos);
-        cellID.sector = std::stoi(sectorStr);
-        pos = endPos;
-    } else {
-        G4cerr << "Warning: Could not parse sector from " << volumeName << G4endl;
-        return cellID;
-    }
-    
-    // Extract station
-    pos = volumeName.find("_St", pos);
-    if (pos != std::string::npos) {
-        pos += 3;  // Skip "_St"
-        size_t endPos = volumeName.find("_", pos);
-        G4String stationStr = volumeName.substr(pos, endPos - pos);
-        cellID.station = std::stoi(stationStr);
-        pos = endPos;
-    } else {
-        G4cerr << "Warning: Could not parse station from " << volumeName << G4endl;
-        return cellID;
-    }
-    
-    // Extract superlayer
-    pos = volumeName.find("_SL", pos);
-    if (pos != std::string::npos) {
-        pos += 3;  // Skip "_SL"
-        size_t endPos = volumeName.find("_", pos);
-        G4String slStr = volumeName.substr(pos, endPos - pos);
-        cellID.superLayer = std::stoi(slStr);
-        pos = endPos;
-    } else {
-        G4cerr << "Warning: Could not parse superlayer from " << volumeName << G4endl;
+    // Check if basic parsing succeeded
+    if (cellID.wheel == -999 || cellID.sector == -999 || 
+        cellID.station == -999 || cellID.superLayer == -999) {
+        G4cerr << "Warning: Could not parse basic cell ID from " << volumeName << G4endl;
         return cellID;
     }
     
