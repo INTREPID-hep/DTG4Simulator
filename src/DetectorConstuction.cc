@@ -19,6 +19,7 @@
 
 #include "CommandLineParser.hh"
 #include "DriftCellSD.hh"
+#include "StationSD.hh"
 #include "DTSimConstants.hh"
 
 namespace DTSim
@@ -50,6 +51,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     auto logVolStore = G4LogicalVolumeStore::GetInstance();
     fDriftCellsLogicals.clear();
     fYokeLogicals.clear();
+    fStationLogicals.clear();
 
     for (auto* logVol : *logVolStore) {
         G4String name = logVol->GetName();
@@ -59,6 +61,9 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
         else if (G4StrUtil::contains(name, "Yoke")) {
             fYokeLogicals.push_back(logVol);
         }
+        else if (G4StrUtil::contains(name, "Station_")) {
+            fStationLogicals.push_back(logVol);
+        }
     }
     
     return const_cast<G4VPhysicalVolume*>(worldPhys);
@@ -67,14 +72,25 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 void DetectorConstruction::ConstructSDandField()
 {
     // ========== Setup Sensitive Detectors ==========
+    auto sdManager = G4SDManager::GetSDMpointer();
+    
+    // DriftCell sensitive detector
     if (!fDriftCellsLogicals.empty()) {
         DTSim::DriftCellSD* driftCellSD = new DTSim::DriftCellSD("/DriftCellSD");
-        auto sdManager = G4SDManager::GetSDMpointer();
         sdManager->AddNewDetector(driftCellSD);
-        
         
         for (auto* logVol : fDriftCellsLogicals) {
             logVol->SetSensitiveDetector(driftCellSD);
+        }
+    }
+    
+    // Station sensitive detector (for truth segments)
+    if (!fStationLogicals.empty()) {
+        DTSim::StationSD* stationSD = new DTSim::StationSD("/StationSD");
+        sdManager->AddNewDetector(stationSD);
+        
+        for (auto* logVol : fStationLogicals) {
+            logVol->SetSensitiveDetector(stationSD);
         }
     }
 

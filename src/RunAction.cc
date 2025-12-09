@@ -48,6 +48,23 @@ RunAction::RunAction()
     analysisManager->CreateNtupleDColumn("gen_pt", fGen_Pt);
     analysisManager->CreateNtupleDColumn("gen_eta", fGen_Eta);
     analysisManager->CreateNtupleDColumn("gen_phi", fGen_Phi);
+    // Segment columns
+    analysisManager->CreateNtupleIColumn("seg_nSegments");
+    analysisManager->CreateNtupleIColumn("seg_wheel", fSeg_Wheel);
+    analysisManager->CreateNtupleIColumn("seg_sector", fSeg_Sector);
+    analysisManager->CreateNtupleIColumn("seg_station", fSeg_Station);
+    analysisManager->CreateNtupleDColumn("seg_localPosX", fSeg_LocalPosX);
+    analysisManager->CreateNtupleDColumn("seg_localPosY", fSeg_LocalPosY);
+    analysisManager->CreateNtupleDColumn("seg_localPosZ", fSeg_LocalPosZ);
+    analysisManager->CreateNtupleDColumn("seg_localDirX", fSeg_LocalDirX);
+    analysisManager->CreateNtupleDColumn("seg_localDirY", fSeg_LocalDirY);
+    analysisManager->CreateNtupleDColumn("seg_localDirZ", fSeg_LocalDirZ);
+    analysisManager->CreateNtupleDColumn("seg_globalPosX", fSeg_GlobalPosX);
+    analysisManager->CreateNtupleDColumn("seg_globalPosY", fSeg_GlobalPosY);
+    analysisManager->CreateNtupleDColumn("seg_globalPosZ", fSeg_GlobalPosZ);
+    analysisManager->CreateNtupleDColumn("seg_globalDirX", fSeg_GlobalDirX);
+    analysisManager->CreateNtupleDColumn("seg_globalDirY", fSeg_GlobalDirY);
+    analysisManager->CreateNtupleDColumn("seg_globalDirZ", fSeg_GlobalDirZ);
     analysisManager->FinishNtuple();
 }
 

@@ -28,6 +28,7 @@ class EventAction : public G4UserEventAction
     void fillGenBranches(const G4Event* event, G4AnalysisManager* analysisManager);
     void fillHitBranches(const G4Event* event, G4AnalysisManager* analysisManager);
     void fillDigiBranches(const G4Event* event, G4AnalysisManager* analysisManager);
+    void fillSegmentBranches(const G4Event* event, G4AnalysisManager* analysisManager);
 };
 
 }

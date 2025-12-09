@@ -10,6 +10,7 @@
 #include "DriftCellHit.hh"
 #include "DriftCellDigi.hh"
 #include "DriftCellDigitizer.hh"
+#include "DTSegment.hh"
 
 namespace DTSim
 {
@@ -46,6 +47,7 @@ void EventAction::EndOfEventAction(const G4Event* event)
     fillGenBranches(event, analysisManager);
     fillHitBranches(event, analysisManager);
     fillDigiBranches(event, analysisManager);
+    fillSegmentBranches(event, analysisManager);
     
     // Write ntuple row
     analysisManager->AddNtupleRow(0);
@@ -83,6 +85,23 @@ void EventAction::clearVectors()
     fRunAction->fGen_Pt.clear();
     fRunAction->fGen_Eta.clear();
     fRunAction->fGen_Phi.clear();
+    
+    // Clear segment vectors
+    fRunAction->fSeg_Wheel.clear();
+    fRunAction->fSeg_Sector.clear();
+    fRunAction->fSeg_Station.clear();
+    fRunAction->fSeg_LocalPosX.clear();
+    fRunAction->fSeg_LocalPosY.clear();
+    fRunAction->fSeg_LocalPosZ.clear();
+    fRunAction->fSeg_LocalDirX.clear();
+    fRunAction->fSeg_LocalDirY.clear();
+    fRunAction->fSeg_LocalDirZ.clear();
+    fRunAction->fSeg_GlobalPosX.clear();
+    fRunAction->fSeg_GlobalPosY.clear();
+    fRunAction->fSeg_GlobalPosZ.clear();
+    fRunAction->fSeg_GlobalDirX.clear();
+    fRunAction->fSeg_GlobalDirY.clear();
+    fRunAction->fSeg_GlobalDirZ.clear();
 }
 
 void EventAction::fillHitBranches(const G4Event* event, G4AnalysisManager* analysisManager)
@@ -225,6 +244,70 @@ void EventAction::fillGenBranches(const G4Event* event, G4AnalysisManager* analy
     
     G4cout << "=== EventAction: " << nPrimaries << " primary particles generated in event " 
            << event->GetEventID() << " ===" << G4endl;
+}
+
+
+void EventAction::fillSegmentBranches(const G4Event* event, G4AnalysisManager* analysisManager)
+{
+    // Get hits collection from the event
+    G4HCofThisEvent* hce = event->GetHCofThisEvent();
+    if (!hce) {
+        // No hits collection - fill zero segments
+        analysisManager->FillNtupleIColumn(0, 30, 0);
+        return;
+    }
+
+    // Get the collection ID for DTSegmentCollection
+    G4SDManager* sdManager = G4SDManager::GetSDMpointer();
+    G4int hcID = sdManager->GetCollectionID("DTSegmentCollection");
+    if (hcID < 0) {
+        analysisManager->FillNtupleIColumn(0, 30, 0);
+        return;
+    }
+
+    // Retrieve the segment collection
+    DTSegmentCollection* segmentCollection = 
+        static_cast<DTSegmentCollection*>(hce->GetHC(hcID));
+    
+    if (!segmentCollection) {
+        analysisManager->FillNtupleIColumn(0, 30, 0);
+        return;
+    }
+
+    G4int nSegments = segmentCollection->entries();
+    
+    G4cout << "=== EventAction: " << nSegments << " segments collected in event " 
+           << event->GetEventID() << " ===" << G4endl;
+    
+    // Fill scalar column for number of segments (column 30)
+    analysisManager->FillNtupleIColumn(0, 30, nSegments);
+
+    // Loop over all segments and fill RunAction's vectors
+    for (G4int i = 0; i < nSegments; i++) {
+        DTSegment* segment = (*segmentCollection)[i];
+        StationID stationID = segment->GetStationID();
+        G4ThreeVector localPos = segment->GetLocalPos();
+        G4ThreeVector localDir = segment->GetLocalDir();
+        G4ThreeVector globalPos = segment->GetGlobalPos();
+        G4ThreeVector globalDir = segment->GetGlobalDir();
+        
+        // Fill vectors with push_back
+        fRunAction->fSeg_Wheel.push_back(stationID.wheel);
+        fRunAction->fSeg_Sector.push_back(stationID.sector);
+        fRunAction->fSeg_Station.push_back(stationID.station);
+        fRunAction->fSeg_LocalPosX.push_back(localPos.x());
+        fRunAction->fSeg_LocalPosY.push_back(localPos.y());
+        fRunAction->fSeg_LocalPosZ.push_back(localPos.z());
+        fRunAction->fSeg_LocalDirX.push_back(localDir.x());
+        fRunAction->fSeg_LocalDirY.push_back(localDir.y());
+        fRunAction->fSeg_LocalDirZ.push_back(localDir.z());
+        fRunAction->fSeg_GlobalPosX.push_back(globalPos.x());
+        fRunAction->fSeg_GlobalPosY.push_back(globalPos.y());
+        fRunAction->fSeg_GlobalPosZ.push_back(globalPos.z());
+        fRunAction->fSeg_GlobalDirX.push_back(globalDir.x());
+        fRunAction->fSeg_GlobalDirY.push_back(globalDir.y());
+        fRunAction->fSeg_GlobalDirZ.push_back(globalDir.z());
+    }    
 }
 
 }

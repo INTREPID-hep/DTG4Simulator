@@ -57,6 +57,45 @@ struct CellID {
     }
 };
 
+// Struct to hold station identification (for truth segments)
+struct StationID {
+    G4int wheel;        // Valid range: -2 to +2
+    G4int sector;       // Valid range: 1 to 12 (or 14)
+    G4int station;      // Valid range: 1 to 4
+    
+    // Constructor - initialize to clearly invalid values
+    StationID() : wheel(-999), sector(-999), station(-999) {}
+    
+    StationID(G4int w, G4int sec, G4int st) 
+        : wheel(w), sector(sec), station(st) {}
+    
+    // Check if valid using constants
+    bool isValid() const {
+        return wheel >= kMinWheel && wheel <= kMaxWheel &&
+               sector >= kMinSector && sector <= kMaxSector &&
+               station >= kMinStation && station <= kMaxStation;
+    }
+    
+    // Equality operator
+    bool operator==(const StationID& other) const {
+        return wheel == other.wheel &&
+               sector == other.sector &&
+               station == other.station;
+    }
+    
+    bool operator!=(const StationID& other) const {
+        return !(*this == other);
+    }
+    
+    // Output operator for easy printing
+    friend std::ostream& operator<<(std::ostream& os, const StationID& id) {
+        os << "W" << id.wheel 
+           << "_Sec" << id.sector 
+           << "_St" << id.station;
+        return os;
+    }
+};
+
 }
 
 #endif

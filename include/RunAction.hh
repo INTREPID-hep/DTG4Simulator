@@ -50,6 +50,23 @@ class RunAction : public G4UserRunAction
     std::vector<G4double> fGen_Pt;
     std::vector<G4double> fGen_Eta;
     std::vector<G4double> fGen_Phi;
+    
+    // Vector storage for segment data (bound to ntuple columns)
+    std::vector<G4int> fSeg_Wheel;
+    std::vector<G4int> fSeg_Sector;
+    std::vector<G4int> fSeg_Station;
+    std::vector<G4double> fSeg_LocalPosX;
+    std::vector<G4double> fSeg_LocalPosY;
+    std::vector<G4double> fSeg_LocalPosZ;
+    std::vector<G4double> fSeg_LocalDirX;
+    std::vector<G4double> fSeg_LocalDirY;
+    std::vector<G4double> fSeg_LocalDirZ;
+    std::vector<G4double> fSeg_GlobalPosX;
+    std::vector<G4double> fSeg_GlobalPosY;
+    std::vector<G4double> fSeg_GlobalPosZ;
+    std::vector<G4double> fSeg_GlobalDirX;
+    std::vector<G4double> fSeg_GlobalDirY;
+    std::vector<G4double> fSeg_GlobalDirZ;
 };
 
 }
