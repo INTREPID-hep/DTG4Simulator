@@ -1,71 +1,52 @@
+"""
+CMS Drift Tube Geometry Generator for Geant4
+
+This module generates Geant4 ASCII text geometry files for CMS drift tube (DT) stations,
+including drift cells, honeycomb layers, and iron yoke structures.
+"""
+
 from mpldts.geometry import Station
 import numpy as np
 from pathlib import Path
 
 
-def get_yoke_thickness(wheel, sector, current_station):
-    """
-    Calculate yoke thickness dynamically for the specific station.
-    
-    - MB1: uses MB1 station height
-    - MB2, MB3, MB4: gap between previous station and current station
-    
-    Uses projection onto the current station's normal vector to account for
-    station tilt relative to the radial vector.
-    """
-    station_num = current_station.number
-    # MB1 yoke uses the station height itself
-    if station_num == 1:
-        return current_station.bounds[1]
-        
-    # For other stations, calculate gap from previous station
-    prev_st_num = station_num - 1
-    try:
-        prev_station = Station(wheel=wheel, sector=sector, station=prev_st_num)
-    except:
-        # If previous station doesn't exist, return default
-        return 40.0
-        
-    # --- Calculate gap using projection onto station normal ---
-    
-    # 1. Get outward normal of current station
-    # direction points inward (towards IP), so -direction is outward
-    outward_normal = -1 * np.array(current_station.direction)
-    
-    # 2. Project current station inner face onto normal
-    # Center projected onto normal - half height
-    c_curr = np.array(current_station.global_center)
-    h_curr = current_station.bounds[1]
-    dist_curr_inner = np.dot(c_curr, outward_normal) - h_curr/2
-    
-    # 3. Project previous station outer face onto normal
-    # Center projected onto normal + half height
-    # Note: This assumes prev station thickness aligns roughly with current station normal
-    c_prev = np.array(prev_station.global_center)
-    h_prev = prev_station.bounds[1]
-    dist_prev_outer = np.dot(c_prev, outward_normal) + h_prev/2
-    
-    # Gap between them is the yoke thickness
-    gap = dist_curr_inner - dist_prev_outer
-    
-    return gap
-
+# =============================================================================
+# UTILITY FUNCTIONS
+# =============================================================================
 
 def extract_rotation(matrix):
     """
-    Extract rotation from 4x4 transformation matrix.
+    Extract 3x3 rotation matrix from 4x4 transformation matrix.
     
     Args:
         matrix: 4x4 transformation matrix
         
     Returns:
-        rotation_flat: 9 values (XX, XY, XZ, YX, YY, YZ, ZX, ZY, ZZ)
+        Flattened rotation matrix as 9 values (XX, XY, XZ, YX, YY, YZ, ZX, ZY, ZZ)
     """
-    rotation = matrix[:3, :3]
-    rotation_flat = rotation.flatten()
-    return rotation_flat
+    return matrix[:3, :3].flatten()
 
 
+def format_rotation_matrix(rot, name):
+    """
+    Format rotation matrix for Geant4 geometry file.
+    
+    Args:
+        rot: Flattened 9-element rotation matrix
+        name: Name for the rotation matrix
+        
+    Returns:
+        Formatted ROTM line
+    """
+    return (f":ROTM {name} "
+            f"{rot[0]:.6f} {rot[1]:.6f} {rot[2]:.6f} "
+            f"{rot[3]:.6f} {rot[4]:.6f} {rot[5]:.6f} "
+            f"{rot[6]:.6f} {rot[7]:.6f} {rot[8]:.6f}\n")
+
+
+# =============================================================================
+# STATION COMPONENT GENERATORS
+# =============================================================================
 def create_station_volume(station, wheel, sector, station_num):
     """
     Create the station volume definition.
@@ -80,10 +61,12 @@ def create_station_volume(station, wheel, sector, station_num):
     geometry = ""
     station_bounds = station.bounds
     station_name = f"Station_W{wheel}_Sec{sector}_St{station_num}"
+    solid_name = f"Solid_{station_name}"
     
-    # Define station volume (BOX: half-widths in X, Y, Z) - merged syntax
-    geometry += f":VOLU {station_name} BOX "
-    geometry += f"{station_bounds[0]/2:.6f}*cm {station_bounds[2]/2:.6f}*cm {station_bounds[1]/2:.6f}*cm G4_AIR\n"
+    # Define station solid and volume (BOX: half-widths in X, Y, Z)
+    geometry += f":SOLID {solid_name} BOX "
+    geometry += f"{station_bounds[0]/2:.6f}*cm {station_bounds[2]/2:.6f}*cm {station_bounds[1]/2:.6f}*cm\n"
+    geometry += f":VOLU {station_name} {solid_name} G4_AIR\n"
     
     # Get station transformation and rotation
     station_transform = station.transformer.get_transformation(from_frame="Station", to_frame="CMS")
@@ -91,70 +74,22 @@ def create_station_volume(station, wheel, sector, station_num):
     station_center = station.global_center
     
     # Create rotation matrix
-    geometry += f":ROTM RM_Station_{wheel}_{sector}_{station_num} "
-    geometry += f"{station_rot[0]:.6f} {station_rot[1]:.6f} {station_rot[2]:.6f} "
-    geometry += f"{station_rot[3]:.6f} {station_rot[4]:.6f} {station_rot[5]:.6f} "
-    geometry += f"{station_rot[6]:.6f} {station_rot[7]:.6f} {station_rot[8]:.6f}\n"
+    rot_name = f"RM_Station_{wheel}_{sector}_{station_num}"
+    geometry += format_rotation_matrix(station_rot, rot_name)
     
     # Place station in world
-    geometry += f":PLACE {station_name} 1 world RM_Station_{wheel}_{sector}_{station_num} "
-    geometry += f"{station_center[0]:.6f}*cm {station_center[1]:.6f}*cm {station_center[2]:.6f}*cm\n\n"
+    geometry += (f":PLACE {station_name} 1 world {rot_name} "
+                 f"{station_center[0]:.6f}*cm {station_center[1]:.6f}*cm {station_center[2]:.6f}*cm\n\n")
     
     return geometry, station_name, station_bounds
 
 
-def create_yoke(station, wheel, sector, station_num, station_bounds):
-    """
-    Create iron yoke volume positioned radially below the station.
-    
-    Yoke thickness fills the radial gap between consecutive stations:
-    - MB1 yoke: uses MB1 station height (innermost, no station below)
-    - MB2 yoke: fills gap between MB1 and MB2 (radially inward from MB2)
-    - MB3 yoke: fills gap between MB2 and MB3 (radially inward from MB3)
-    - MB4 yoke: fills gap between MB3 and MB4 (radially inward from MB4)
-    
-    Args:
-        station: Station object from mplDTs
-        wheel, sector, station_num: Station identifiers
-        station_bounds: Station dimensions [width, height, length]
-        
-    Returns:
-        String with yoke volume and placement definitions
-    """
-    geometry = ""
-    yoke_name = f"Yoke_W{wheel}_Sec{sector}_St{station_num}"
-    station_center = station.global_center
-    
-    # Get yoke thickness for this station type (gap to next station)
-    yoke_thickness = get_yoke_thickness(wheel, sector, station)
-    
-    # Yoke volume: merged solid+volume syntax
-    geometry += f"// Iron Yoke (radially inward, thickness={yoke_thickness:.2f} cm)\n"
-    geometry += f":VOLU {yoke_name} BOX "
-    geometry += f"{station_bounds[0]/2:.6f}*cm {station_bounds[2]/2:.6f}*cm {(yoke_thickness - 1)/2:.6f}*cm G4_Fe\n"
-    
-    # Calculate yoke position: radially inward from station in XY plane
-    station_pos_xy = np.array([station_center[0], station_center[1], 0.0])
-    radial_distance_xy = np.linalg.norm(station_pos_xy)
-    radial_unit_xy = station_pos_xy / radial_distance_xy
-    
-    # Move yoke inward by station_height/2 + yoke_thickness/2
-    offset = (station_bounds[1]/2 + yoke_thickness/2)
-    yoke_pos_xy = station_pos_xy - radial_unit_xy * offset
-    yoke_pos = np.array([yoke_pos_xy[0], yoke_pos_xy[1], station_center[2]])
-    
-    # Place yoke with same rotation as station
-    geometry += f":PLACE {yoke_name} 1 world RM_Station_{wheel}_{sector}_{station_num} "
-    geometry += f"{yoke_pos[0]:.6f}*cm {yoke_pos[1]:.6f}*cm {yoke_pos[2]:.6f}*cm\n\n"
-    
-    return geometry
-
-
 def create_superlayer_cells(station, wheel, sector, station_num, station_name):
     """
-    Create all drift cells for all superlayers in the station.
+    Create drift cell volumes for all superlayers in the station.
+    
     Defines ONE logical volume per superlayer and places multiple copies.
-    Volume name encodes cells-per-layer information.
+    The volume name encodes the number of cells per layer for identification.
     
     Args:
         station: Station object from mplDTs
@@ -162,52 +97,44 @@ def create_superlayer_cells(station, wheel, sector, station_num, station_name):
         station_name: Name of the station volume
         
     Returns:
-        String with cell volume definitions and placements
+        Geometry string with cell volume definitions and placements
     """
     geometry = ""
     
     for sl in station.super_layers:
         geometry += f"// SuperLayer {sl.number} - Drift Cell Volume\n"
         
-        # Count cells per layer to encode in volume name
+        # Count cells per layer and encode in volume name
+        # Format: 2 digits per layer count, e.g., [60, 60, 59, 59] -> "60605959"
         cells_per_layer = [len(layer.cells) for layer in sl.layers]
-        
-        # Format: up to 2 digits per layer count (pad with leading zero if needed)
-        # E.g., [60, 60, 59, 59] -> "60605959"
         layer_encoding = "".join([f"{count:02d}" for count in cells_per_layer])
         
-        # Define ONE drift cell volume for this superlayer with encoded name
-        first_cell = None
-        if len(sl.layers) > 0 and len(sl.layers[0].cells) > 0:
-            first_cell = sl.layers[0].cells[0]
-        
+        # Define drift cell volume using first cell as reference
+        if not sl.layers or not sl.layers[0].cells:
+            continue
+            
+        first_cell = sl.layers[0].cells[0]
         cell_volume_name = f"DriftCell_W{wheel}_Sec{sector}_St{station_num}_SL{sl.number}_{layer_encoding}"
+        cell_bounds = first_cell.bounds
         
-        if first_cell:
-            cell_bounds = first_cell.bounds
-            geometry += f":VOLU {cell_volume_name} BOX "
-            geometry += f"{cell_bounds[0]/2:.6f}*cm {cell_bounds[2]/2:.6f}*cm {cell_bounds[1]/2:.6f}*cm GasMixture\n\n"
+        geometry += f":VOLU {cell_volume_name} BOX "
+        geometry += f"{cell_bounds[0]/2:.6f}*cm {cell_bounds[2]/2:.6f}*cm {cell_bounds[1]/2:.6f}*cm GasMixture\n\n"
         
-        # SL2 needs its own rotation matrix (rotated 90° in Z)
+        # SL2 needs its own rotation matrix (rotated 90° around Z)
         if sl.number == 2:
             sl_transform = sl.transformer.get_transformation(from_frame="SuperLayer", to_frame="Station")
             sl_rot = extract_rotation(sl_transform)
-            
-            sl_rot_name = f"RM_SL2_W{wheel}_Sec{sector}_St{station_num}"
-            geometry += f":ROTM {sl_rot_name} "
-            geometry += f"{sl_rot[0]:.6f} {sl_rot[1]:.6f} {sl_rot[2]:.6f} "
-            geometry += f"{sl_rot[3]:.6f} {sl_rot[4]:.6f} {sl_rot[5]:.6f} "
-            geometry += f"{sl_rot[6]:.6f} {sl_rot[7]:.6f} {sl_rot[8]:.6f}\n"
-            
-            rotation_to_use = sl_rot_name
+            rotation_to_use = f"RM_SL2_W{wheel}_Sec{sector}_St{station_num}"
+            geometry += format_rotation_matrix(sl_rot, rotation_to_use)
         else:
             # SL1 and SL3 use identity rotation
             rotation_to_use = "R0"
             sl_transform = None
         
-        # Place multiple copies of the same logical volume for all cells
+        # Place multiple copies of the cell volume
         geometry += f"// Placing {sum(cells_per_layer)} cells ({' '.join([str(c) for c in cells_per_layer])} per layer)\n"
         copy_number = 1
+        
         for layer in sl.layers:
             for cell in layer.cells:
                 # Get cell position relative to station
@@ -219,7 +146,6 @@ def create_superlayer_cells(station, wheel, sector, station_num, station_name):
                 geometry += f":PLACE {cell_volume_name} {copy_number} {station_name} {rotation_to_use} "
                 geometry += f"{cell_center[0]:.6f}*cm {cell_center[1]:.6f}*cm {cell_center[2]:.6f}*cm\n"
                 copy_number += 1
-            # break  # Only one layer needed for placement example
         geometry += "\n"
     
     return geometry
@@ -227,7 +153,7 @@ def create_superlayer_cells(station, wheel, sector, station_num, station_name):
 
 def create_honeycomb(station, wheel, sector, station_num, station_name, station_bounds):
     """
-    Create aluminum honeycomb layer between SL2 and SL1.
+    Create aluminum honeycomb layer between SL2 and SL1 (or SL3 for MB4).
 
     Args:
         station: Station object from mplDTs
@@ -236,7 +162,7 @@ def create_honeycomb(station, wheel, sector, station_num, station_name, station_
         station_bounds: Station dimensions [width, height, length]
         
     Returns:
-        String with honeycomb volume and placement definitions
+        Geometry string with honeycomb volume and placement
     """
     geometry = ""
     honeycomb_name = f"Honeycomb_W{wheel}_Sec{sector}_St{station_num}"
@@ -245,12 +171,14 @@ def create_honeycomb(station, wheel, sector, station_num, station_name, station_
     sl1 = [sl for sl in station.super_layers if sl.number == 1]
     sl2 = [sl for sl in station.super_layers if sl.number == 2]
     
-    # Handle MB4 stations that don't have SL2 (use SL3 instead)
+    # MB4 stations don't have SL2, use SL3 instead
     if not sl2:
         sl2 = [sl for sl in station.super_layers if sl.number == 3]
-
-    sl1 = sl1[0]
-    sl2 = sl2[0]
+    
+    if not sl1 or not sl2:
+        return ""
+    
+    sl1, sl2 = sl1[0], sl2[0]
     
     # Calculate honeycomb thickness from actual gap
     # Z coordinate is the height/stacking direction in local station frame
@@ -258,21 +186,181 @@ def create_honeycomb(station, wheel, sector, station_num, station_name, station_
     sl2_z_max = sl2.local_cords_at_min[2] + sl2.bounds[1]  # Top of SL2
     honeycomb_thickness = sl1_z_min - sl2_z_max  # Gap between them (~12.8 cm)
     
-    # Honeycomb volume: merged syntax
+    # Honeycomb volume
     geometry += f"// Aluminum Honeycomb (between SL2 and SL1)\n"
     geometry += f":VOLU {honeycomb_name} BOX "
-    geometry += f"{station_bounds[0]/2 - 0.5:.6f}*cm {station_bounds[2]/2 - 0.5:.6f}*cm {honeycomb_thickness/2 - 0.5:.6f}*cm G4_Al\n"
+    geometry += f"{station_bounds[0]/2 - 0.5:.6f}*cm {station_bounds[2]/2 - 0.5:.6f}*cm "
+    geometry += f"{honeycomb_thickness/2 - 0.5:.6f}*cm G4_Al\n"
     
     # Position: midpoint between SL2 (top) and SL1 (bottom) in Z
     honeycomb_z = (sl2_z_max + sl1_z_min) / 2.0
-    honeycomb_pos = [0.0, 0.0, honeycomb_z]
     
     # Place honeycomb in station (no rotation needed)
     geometry += f":PLACE {honeycomb_name} 1 {station_name} R0 "
-    geometry += f"{honeycomb_pos[0]:.6f}*cm {honeycomb_pos[1]:.6f}*cm {honeycomb_pos[2]:.6f}*cm\n\n"
+    geometry += f"0.0*cm 0.0*cm {honeycomb_z:.6f}*cm\n\n"
     
     return geometry
 
+
+# =============================================================================
+# YOKE GENERATION
+# =============================================================================
+
+def _calculate_sector_bounds(wheel, sector, stations_in_sector):
+    """
+    Calculate bounding cylinder for all stations in a sector.
+    
+    Args:
+        wheel: Wheel number
+        sector: Sector number
+        stations_in_sector: List of station numbers
+        
+    Returns:
+        Tuple (r_min, r_max, z_min, z_max, z_center, valid) or None if invalid
+    """
+    r_min, r_max = 1e9, -1e9
+    z_min, z_max = 1e9, -1e9
+    valid = False
+    
+    for st_num in stations_in_sector:
+        try:
+            st = Station(wheel=wheel, sector=sector, station=st_num)
+            
+            # Radial extent
+            center = st.global_center
+            r = np.sqrt(center[0]**2 + center[1]**2)
+            h = st.bounds[1]
+            r_min = min(r_min, r - h / 2)
+            r_max = max(r_max, r + h / 2)
+            
+            # Z extent
+            z, l = center[2], st.bounds[2]
+            z_min = min(z_min, z - l / 2)
+            z_max = max(z_max, z + l / 2)
+            
+            valid = True
+        except:
+            continue
+    
+    if not valid:
+        return None
+    
+    # Add safety margins
+    return (r_min - 5.0, r_max + 5.0, z_min - 5.0, z_max + 5.0, 
+            (z_max + z_min) / 2.0, valid)
+
+
+def generate_yoke(stations_list, sector_stations):
+    """
+    Generate unified yoke assembly in a single file using boolean operations.
+    
+    Creates yoke.tg containing:
+    1. Base TUBS solids for each sector
+    2. Union operations to combine all sectors
+    3. Subtraction operations to create holes for stations
+    4. Final yoke volume and placement
+    
+    Args:
+        stations_list: List of (wheel, sector, station) tuples
+        sector_stations: Dict {(wheel, sector): [station_nums]}
+        
+    Returns:
+        Filename of the generated yoke file ("yoke.tg")
+    """
+    filename = "yoke.tg"
+    filepath = Path(filename)
+    
+    geometry = "// Unified Yoke Assembly with Station Holes\n\n"
+    
+    # 1. Generate base TUBS solids for each sector
+    geometry += "// Base Iron Wedges (TUBS) for all sectors\n"
+    base_yoke_info = {}  # {(wheel, sector): (solid_name, z_center)}
+    
+    for (wheel, sector), stations_in_sector in sector_stations.items():
+        bounds = _calculate_sector_bounds(wheel, sector, stations_in_sector)
+        if bounds is None:
+            continue
+        
+        r_min, r_max, z_min, z_max, z_center, _ = bounds
+        
+        # Calculate TUBS parameters
+        z_half = (z_max - z_min) / 2.0
+        
+        # Phi angle for sector (30° per sector)
+        sector_center_deg = (sector - 1) * 30.0
+        phi_start = sector_center_deg - 15.0
+        phi_delta = 30.0
+        
+        solid_name = f"IronTrap_W{wheel}_Sec{sector}"
+        
+        geometry += f"// Wheel {wheel} Sector {sector}\n"
+        geometry += (f":SOLID {solid_name} TUBS "
+                    f"{r_min:.2f}*cm {r_max:.2f}*cm {z_half:.2f}*cm "
+                    f"{phi_start:.2f}*deg {phi_delta:.2f}*deg\n")
+        
+        base_yoke_info[(wheel, sector)] = (solid_name, z_center)
+    
+    if not base_yoke_info:
+        return ""
+    
+    geometry += "\n"
+    
+    # 2. Union all base solids
+    geometry += "// Union all sector wedges into single volume\n"
+    sorted_keys = sorted(base_yoke_info.keys())
+    ref_key = sorted_keys[0]
+    ref_solid_name, ref_z_center = base_yoke_info[ref_key]
+    current_solid_name = ref_solid_name
+    
+    for i, key in enumerate(sorted_keys[1:], start=1):
+        next_solid, next_z = base_yoke_info[key]
+        union_name = f"Solid_Union_{i}"
+        z_shift = next_z - ref_z_center
+        
+        geometry += (f":SOLID {union_name} UNION {current_solid_name} {next_solid} R0 "
+                    f"0*cm 0*cm {z_shift:.6f}*cm\n")
+        current_solid_name = union_name
+    
+    geometry += "\n"
+    
+    # 3. Subtract all station volumes to create holes
+    geometry += "// Subtract all station volumes to create holes\n"
+    subtraction_count = 0
+    
+    for w, s, st_num in stations_list:
+        try:
+            st = Station(wheel=w, sector=s, station=st_num)
+        except:
+            continue
+        
+        st_solid_name = f"Solid_Station_W{w}_Sec{s}_St{st_num}"
+        rot_name = f"RM_Station_{w}_{s}_{st_num}"
+        st_center = st.global_center
+        
+        # Position relative to reference frame
+        rel_z = st_center[2] - ref_z_center
+        
+        subtraction_count += 1
+        next_solid_name = f"Solid_Yoke_Sub{subtraction_count}"
+        
+        geometry += (f":SOLID {next_solid_name} SUBTRACTION {current_solid_name} {st_solid_name} {rot_name} "
+                    f"{st_center[0]:.6f}*cm {st_center[1]:.6f}*cm {rel_z:.6f}*cm\n")
+        
+        current_solid_name = next_solid_name
+    
+    # 4. Create final volume and place in world
+    geometry += f"\n// Final yoke volume and placement\n"
+    geometry += f":VOLU Yoke_Fused {current_solid_name} G4_Fe\n"
+    geometry += f":PLACE Yoke_Fused 1 world R0 0*cm 0*cm {ref_z_center:.6f}*cm\n"
+    
+    filepath.write_text(geometry)
+    
+    return filename
+
+
+# =============================================================================
+# MAIN GENERATION FUNCTIONS
+# =============================================================================
 
 def generate_station_geometry_ascii(
     stations_list,
@@ -291,7 +379,7 @@ def generate_station_geometry_ascii(
         output_dir: Directory where individual station files will be saved
         concentrator_template: Path to concentrator template file
         concentrator_output: Output concentrator geometry file
-        include_yoke: If True, add iron yoke blocks radially below each station
+        include_yoke: If True, generate sector-wide iron yokes with holes
         include_honeycomb: If True, add aluminum honeycomb layer between SL2 and SL1
     """
     # Create output directory if it doesn't exist
@@ -300,18 +388,26 @@ def generate_station_geometry_ascii(
     # Generate individual station files
     station_files = []
     
+    # Group stations by sector for yoke generation
+    sector_stations = {} # (wheel, sector) -> [station_nums]
+    
     for wheel, sector, station_num in stations_list:
+        # Add to sector group
+        key = (wheel, sector)
+        if key not in sector_stations:
+            sector_stations[key] = []
+        sector_stations[key].append(station_num)
+        
         station = Station(wheel=wheel, sector=sector, station=station_num)
         
         # Create filename for this station
         station_filename = f"station_W{wheel}_Sec{sector}_St{station_num}.tg"
-        station_filepath = f"{output_dir}/{station_filename}"
+        station_filepath = Path(output_dir) / station_filename
         station_files.append(station_filename)
         
         # Generate geometry for this station
-        station_geometry = ""
-        station_geometry += f"// ===== Station: Wheel={wheel}, Sector={sector}, Station={station_num} =====\n"
-        station_geometry += f"// {station.name}\n\n"
+        station_geometry = (f"// ===== Station: Wheel={wheel}, Sector={sector}, Station={station_num} =====\n"
+                           f"// {station.name}\n\n")
         
         # Create station volume and placement
         station_vol, station_name, station_bounds = create_station_volume(
@@ -319,11 +415,7 @@ def generate_station_geometry_ascii(
         )
         station_geometry += station_vol
         
-        # Add yoke if requested
-        if include_yoke:
-            station_geometry += create_yoke(
-                station, wheel, sector, station_num, station_bounds
-            )
+        # NOTE: Yoke generation is now handled per-sector, not per-station
         
         # Add drift cells for all superlayers
         station_geometry += create_superlayer_cells(
@@ -337,28 +429,38 @@ def generate_station_geometry_ascii(
             )
         
         # Write this station's geometry to its own file
-        with open(station_filepath, 'w') as f:
-            f.write(station_geometry)
+        station_filepath.write_text(station_geometry)
         
         print(f"  ✓ Generated: {station_filename}")
     
+    # Generate Fused Yoke if requested
+    yoke_file = ""
+    if include_yoke:
+        print("\nGenerating Fused Yoke...")
+        yoke_file = generate_yoke(stations_list, sector_stations)
+        if yoke_file:
+            print(f"  ✓ Generated: {yoke_file}")
+
     # Create concentrator file with #include directives
     _create_concentrator_file(
-        station_files, concentrator_template, concentrator_output, stations_list
+        station_files, yoke_file, concentrator_template, concentrator_output, stations_list
     )
 
 
-def _create_concentrator_file(station_files, template_path, output_path, stations_list):
+def _create_concentrator_file(station_files, yoke_file, template_path, output_path, stations_list):
     """
     Create the main concentrator geometry file that includes all station files.
     
     Args:
         station_files: List of station filenames
+        yoke_file: Filename of the yoke geometry file
         template_path: Path to concentrator template file
         output_path: Output path for concentrator file
         stations_list: List of station tuples for statistics
     """
     include_lines = "\n".join([f"#include geometry/stations/{fname}" for fname in station_files])
+    if yoke_file:
+        include_lines += f"\n#include geometry/{yoke_file}"
     
     # Read concentrator template
     with open(template_path, 'r') as f:
@@ -389,6 +491,10 @@ def _create_concentrator_file(station_files, template_path, output_path, station
 if __name__ == "__main__":
     # Define stations to include (wheel, sector, station)
     stations_to_generate = [
+        (-1, 12, 1),  # MB1
+        (-1, 12, 2),  # MB2
+        (-1, 12, 3),  # MB3
+        (-1, 12, 4),  # MB4
         (-1, 1, 1),  # MB1
         (-1, 1, 2),  # MB2
         (-1, 1, 3),  # MB3
@@ -397,11 +503,6 @@ if __name__ == "__main__":
         (-1, 2, 2),  # MB2
         (-1, 2, 3),  # MB3
         (-1, 2, 4),  # MB4
-        (-1, 3, 1),  # MB1
-        (-1, 3, 2),  # MB2
-        (-1, 3, 3),  # MB3
-        (-1, 3, 4),  # MB4
-        # (0, 1, 1),   # MB1
     ]
     
     print("Generating DT geometry files...")
@@ -413,6 +514,6 @@ if __name__ == "__main__":
         output_dir='stations',
         concentrator_template='geometry_concentrator_template',
         concentrator_output='geometry_concentrator.tg',
-        include_yoke=True,       # Include iron yokes below stations
+        include_yoke=True,       # Include iron yoke
         include_honeycomb=True   # Include aluminum honeycomb between SL2 and SL1
     )
