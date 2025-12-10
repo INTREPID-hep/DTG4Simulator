@@ -3,68 +3,52 @@ import numpy as np
 from pathlib import Path
 
 
-def calculate_yoke_thicknesses(wheel, sector):
+def get_yoke_thickness(wheel, sector, current_station):
     """
-    Calculate yoke thickness for each station type by measuring the radial gap
-    between consecutive stations.
+    Calculate yoke thickness dynamically for the specific station.
     
-    - MB1 yoke: uses MB1 station height (innermost station)
-    - MB2 yoke: gap between MB1 and MB2
-    - MB3 yoke: gap between MB2 and MB3
-    - MB4 yoke: gap between MB3 and MB4
+    - MB1: uses MB1 station height
+    - MB2, MB3, MB4: gap between previous station and current station
     
-    Args:
-        wheel: Wheel number
-        sector: Sector number
-        
-    Returns:
-        Dictionary mapping station_num -> yoke_thickness in cm
+    Uses projection onto the current station's normal vector to account for
+    station tilt relative to the radial vector.
     """
-    yoke_thickness = {}
+    station_num = current_station.number
+    # MB1 yoke uses the station height itself
+    if station_num == 1:
+        return current_station.bounds[1]
+        
+    # For other stations, calculate gap from previous station
+    prev_st_num = station_num - 1
+    try:
+        prev_station = Station(wheel=wheel, sector=sector, station=prev_st_num)
+    except:
+        # If previous station doesn't exist, return default
+        return 40.0
+        
+    # --- Calculate gap using projection onto station normal ---
     
-    # Get all stations
-    stations = {}
-    for st_num in [1, 2, 3, 4]:
-        try:
-            station = Station(wheel=wheel, sector=sector, station=st_num)
-            stations[st_num] = station
-        except:
-            continue
+    # 1. Get outward normal of current station
+    # direction points inward (towards IP), so -direction is outward
+    outward_normal = -1 * np.array(current_station.direction)
     
-    # MB1 yoke uses the station height itself (innermost station)
-    if 1 in stations:
-        yoke_thickness[1] = stations[1].bounds[1]
+    # 2. Project current station inner face onto normal
+    # Center projected onto normal - half height
+    c_curr = np.array(current_station.global_center)
+    h_curr = current_station.bounds[1]
+    dist_curr_inner = np.dot(c_curr, outward_normal) - h_curr/2
     
-    # Calculate gaps between consecutive stations for MB2, MB3, MB4
-    for st_num in [1, 2, 3]:
-        next_st = st_num + 1
-        
-        if st_num not in stations or next_st not in stations:
-            continue
-        
-        station = stations[st_num]
-        next_station = stations[next_st]
-        
-        # Outer edge of current station (radial distance + half height)
-        center = station.global_center
-        radial_dist = np.sqrt(center[0]**2 + center[1]**2)
-        outer_edge = radial_dist + station.bounds[1]/2
-        
-        # Inner edge of next station (radial distance - half height)
-        next_center = next_station.global_center
-        next_radial_dist = np.sqrt(next_center[0]**2 + next_center[1]**2)
-        next_inner_edge = next_radial_dist - next_station.bounds[1]/2
-        
-        # Gap between them is the yoke thickness for the next station
-        gap = next_inner_edge - outer_edge - 5.0  # Subtract 5 cm safety margin
-        yoke_thickness[next_st] = gap
+    # 3. Project previous station outer face onto normal
+    # Center projected onto normal + half height
+    # Note: This assumes prev station thickness aligns roughly with current station normal
+    c_prev = np.array(prev_station.global_center)
+    h_prev = prev_station.bounds[1]
+    dist_prev_outer = np.dot(c_prev, outward_normal) + h_prev/2
     
-    return yoke_thickness
-
-
-# Calculate yoke thicknesses once (using a reference station)
-# These values are consistent across all wheels/sectors for same station type
-YOKE_THICKNESS = calculate_yoke_thicknesses(wheel=-1, sector=2)
+    # Gap between them is the yoke thickness
+    gap = dist_curr_inner - dist_prev_outer
+    
+    return gap
 
 
 def extract_rotation(matrix):
@@ -142,12 +126,12 @@ def create_yoke(station, wheel, sector, station_num, station_bounds):
     station_center = station.global_center
     
     # Get yoke thickness for this station type (gap to next station)
-    yoke_thickness = YOKE_THICKNESS.get(station_num, 40.0)  # Default if not found
+    yoke_thickness = get_yoke_thickness(wheel, sector, station)
     
     # Yoke volume: merged solid+volume syntax
     geometry += f"// Iron Yoke (radially inward, thickness={yoke_thickness:.2f} cm)\n"
     geometry += f":VOLU {yoke_name} BOX "
-    geometry += f"{station_bounds[0]/2:.6f}*cm {station_bounds[2]/2:.6f}*cm {yoke_thickness/2:.6f}*cm G4_Fe\n"
+    geometry += f"{station_bounds[0]/2:.6f}*cm {station_bounds[2]/2:.6f}*cm {(yoke_thickness - 1)/2:.6f}*cm G4_Fe\n"
     
     # Calculate yoke position: radially inward from station in XY plane
     station_pos_xy = np.array([station_center[0], station_center[1], 0.0])
@@ -235,6 +219,7 @@ def create_superlayer_cells(station, wheel, sector, station_num, station_name):
                 geometry += f":PLACE {cell_volume_name} {copy_number} {station_name} {rotation_to_use} "
                 geometry += f"{cell_center[0]:.6f}*cm {cell_center[1]:.6f}*cm {cell_center[2]:.6f}*cm\n"
                 copy_number += 1
+            # break  # Only one layer needed for placement example
         geometry += "\n"
     
     return geometry
@@ -416,6 +401,7 @@ if __name__ == "__main__":
         (-1, 3, 2),  # MB2
         (-1, 3, 3),  # MB3
         (-1, 3, 4),  # MB4
+        # (0, 1, 1),   # MB1
     ]
     
     print("Generating DT geometry files...")
