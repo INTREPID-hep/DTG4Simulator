@@ -35,6 +35,9 @@ G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
     // Apply electrostatic confinement (trap low energy electrons)
     ApplyElectrostaticConfinement(step);
 
+    // Apply virtual wall physics (energy loss at boundaries)
+    EmulateWallCrossing(step);
+
     // Apply hit filters
     if (!PassHitCriteria(step)) return true;
 
@@ -126,6 +129,33 @@ void DriftCellSD::ApplyElectrostaticConfinement(G4Step* step)
             step->AddTotalEnergyDeposit(kineticEnergy);
 
             track->SetKineticEnergy(0.0);
+        }
+    }
+}
+
+void DriftCellSD::EmulateWallCrossing(G4Step* step)
+{
+    // Check if particle is leaving the cell (crossing a boundary)
+    if (step->GetPostStepPoint()->GetStepStatus() == fGeomBoundary) {
+        
+        G4Track* track = step->GetTrack();
+        
+        // Only affect electrons and positrons (PDG ID 11 and -11)
+        // Neutrals and heavy charged particles are not affected by this thin wall approximation
+        if (std::abs(track->GetDefinition()->GetPDGEncoding()) == 11) {
+            
+            G4double currentKE = track->GetKineticEnergy();
+            
+            if (currentKE > DTSim::kWallEnergyLoss) {
+                // It punches through the wall, but loses energy
+                track->SetKineticEnergy(currentKE - DTSim::kWallEnergyLoss);
+            } else {
+                // It gets stuck in the wall
+                track->SetTrackStatus(fStopAndKill);
+                track->SetKineticEnergy(0.0); 
+                // The energy is lost in the wall, NOT deposited in the gas.
+                // So we do NOT add it to step->AddTotalEnergyDeposit().
+            }
         }
     }
 }
