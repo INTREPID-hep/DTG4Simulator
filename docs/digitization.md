@@ -8,21 +8,15 @@ La clase `DriftCellDigitizer` (hereda de `G4VDigitizerModule`) es responsable de
 
 ### Proceso de Digitalización
 
-El algoritmo de digitalización aplica los siguientes pasos a cada hit:
+El algoritmo de digitalización agrupa los hits por celda y selecciona solo el primero en llegar (leading edge):
 
-1.  **Eficiencia de Detección**:
-    *   Se aplica una probabilidad de detección (`kEfficiency`).
-    *   Si el hit no pasa este corte, se descarta (simulando ineficiencia de la celda).
-
-2.  **Resolución Temporal (Smearing)**:
-    *   Se toma el tiempo de deriva (`driftTime`) del hit.
-    *   Se añade un error aleatorio gaussiano (`G4RandGauss`) basado en la resolución temporal del detector (`kTimeResolution`).
+1.  **Agrupamiento**: Todos los hits de Geant4 en la misma celda (mismo `CellID`) se agrupan.
+2.  **Selección Temporal**: Se ordenan por tiempo de deriva (`driftTime`) y se selecciona el hit más temprano. Esto simula la electrónica que dispara con la primera ionización que llega al hilo.
+3.  **Eficiencia de Detección**: Se aplica una probabilidad de detección (`kEfficiency`).
+4.  **Resolución Temporal (Smearing)**:
     *   $t_{smeared} = t_{drift} + \mathcal{N}(0, \sigma_{time})$
-
-3.  **Conversión a TDC**:
-    *   El tiempo "manchado" (smeared) se convierte a cuentas de TDC (Time-to-Digital Converter).
+5.  **Conversión a TDC**:
     *   $TDC = \text{int}(t_{smeared} / \text{TDC\_Resolution})$
-    *   Se asegura que el tiempo no sea negativo.
 
 ### Parámetros de Configuración
 

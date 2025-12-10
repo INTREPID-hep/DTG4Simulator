@@ -19,9 +19,13 @@ El struct `CellID` contiene la jerarquía completa: wheel (-2 a +2), sector (1-1
 
 El método `ProcessHits()` ejecuta para cada step en volúmenes sensibles:
 
-1. **Filtro inicial**: Solo procesa partículas cargadas con energía depositada mayor al umbral (kMinEnergyDeposit = 26.6 eV, energía de ionización del gas Ar-CO2 85:15)
+1. **Confinamiento Electrostático**: Simula el atrapamiento de electrones de baja energía (< 2.1 keV) por el potencial del ánodo. Si no tienen suficiente energía para escapar, se detienen y depositan su energía en la celda actual.
 
-2. **Decodificación geométrica**: 
+2. **Paredes Virtuales**: Emula la pérdida de energía (1 keV) de partículas cargadas al cruzar los límites entre celdas, simulando las paredes de aluminio que no están en la geometría física.
+
+3. **Filtro inicial**: Solo procesa partículas cargadas con energía depositada mayor al umbral (kMinEnergyDeposit = 26.6 eV).
+
+4. **Decodificación geométrica**: 
    - Extrae nombre del volumen y copyNo del **PreStepPoint** (asegura obtener el volumen sensible correcto)
    - Decodifica CellID completo del nombre del volumen
    - Valida que el CellID sea correcto antes de continuar
