@@ -44,6 +44,27 @@ struct CellID {
     bool operator!=(const CellID& other) const {
         return !(*this == other);
     }
+
+    // Unique hash for using CellID in unordered_map
+    // Packing strategy: W(3bit) Sec(4bit) St(3bit) SL(2bit) L(3bit) Wire(8bit)
+    // Or simple decimal packing since ranges are small
+    std::size_t getHash() const {
+        // Wheel: -2..2 -> 0..4 (add 2)
+        // Sector: 1..14
+        // Station: 1..4
+        // SL: 1..3
+        // Layer: 1..4
+        // Wire: 1..100
+        
+        std::size_t hash = 0;
+        hash += (wheel + 2);
+        hash = hash * 100 + sector;
+        hash = hash * 10 + station;
+        hash = hash * 10 + superLayer;
+        hash = hash * 10 + layer;
+        hash = hash * 1000 + wire; // Allow up to 999 wires
+        return hash;
+    }
     
     // Output operator for easy printing
     friend std::ostream& operator<<(std::ostream& os, const CellID& id) {
@@ -86,6 +107,15 @@ struct StationID {
     bool operator!=(const StationID& other) const {
         return !(*this == other);
     }
+
+    // Unique hash for using StationID in unordered_map
+    std::size_t getHash() const {
+        std::size_t hash = 0;
+        hash += (wheel + 2);
+        hash = hash * 100 + sector;
+        hash = hash * 10 + station;
+        return hash;
+    }
     
     // Output operator for easy printing
     friend std::ostream& operator<<(std::ostream& os, const StationID& id) {
@@ -96,6 +126,23 @@ struct StationID {
     }
 };
 
+}
+
+// Specialization of std::hash for CellID and StationID
+namespace std {
+    template <>
+    struct hash<DTSim::CellID> {
+        std::size_t operator()(const DTSim::CellID& id) const {
+            return id.getHash();
+        }
+    };
+
+    template <>
+    struct hash<DTSim::StationID> {
+        std::size_t operator()(const DTSim::StationID& id) const {
+            return id.getHash();
+        }
+    };
 }
 
 #endif

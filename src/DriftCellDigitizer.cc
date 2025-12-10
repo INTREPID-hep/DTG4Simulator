@@ -10,8 +10,16 @@
 #include "DriftCellHit.hh"
 #include "DTSimConstants.hh"
 
+#include <unordered_map>
+#include <vector>
+
 namespace DTSim
 {
+
+// Helper for sorting hits by time
+static bool CompareHitTimes(const DriftCellHit* a, const DriftCellHit* b) {
+    return a->GetTimeDrift() < b->GetTimeDrift();
+}
 
 DriftCellDigitizer::DriftCellDigitizer(G4String name)
  : G4VDigitizerModule(name)
@@ -67,9 +75,26 @@ void DriftCellDigitizer::Digitize()
   // -------------------- Digitization --------------------
   G4int nHits = hitsCollection->entries();
   
-  // Process each hit and create digis
+  // Map to group hits by CellID
+  // Using unordered_map (hash map) for O(1) access
+  std::unordered_map<CellID, std::vector<DriftCellHit*>> cellHitsMap;
+
+  // 1. Group hits by cell
   for (G4int i = 0; i < nHits; i++) {
     DriftCellHit* hit = (*hitsCollection)[i];
+    cellHitsMap[hit->GetCellID()].push_back(hit);
+  }
+
+  // 2. Process each cell
+  for (auto& entry : cellHitsMap) {
+    std::vector<DriftCellHit*>& hits = entry.second;
+
+    // Sort hits by time
+    std::sort(hits.begin(), hits.end(), CompareHitTimes);
+
+    // Take the first hit (earliest time)
+    // TODO: Implement dead time logic here (process hits[1..N])
+    DriftCellHit* hit = hits[0];
     
     // Apply detection efficiency
     if (G4UniformRand() > kEfficiency) {
