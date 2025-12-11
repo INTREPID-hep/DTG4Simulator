@@ -7,6 +7,7 @@
 #include "G4SDManager.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4UnitsTable.hh"
+#include "G4GenericMessenger.hh"
 #include <sstream>
 
 #include "DTSimConstants.hh"
@@ -15,9 +16,42 @@ namespace DTSim
 {
 
 DriftCellSD::DriftCellSD(const G4String& name)
-  : G4VSensitiveDetector(name)
+  : G4VSensitiveDetector(name),
+    fMessenger(nullptr),
+    fDriftVelocity(DTSim::kDriftVelocity),
+    fMinEnergyDeposit(DTSim::kMinEnergyDeposit),
+    fCellBarrierEnergy(DTSim::kCellBarrierEnergy),
+    fWallEnergyLoss(DTSim::kWallEnergyLoss)
 {
     collectionName.insert("DriftCellHitsCollection");
+    DefineCommands();
+}
+
+DriftCellSD::~DriftCellSD()
+{
+    delete fMessenger;
+}
+
+void DriftCellSD::DefineCommands()
+{
+    fMessenger = new G4GenericMessenger(this, "/DTSim/cellSD/",
+                                        "Drift Cell physics parameters");
+    
+    fMessenger->DeclarePropertyWithUnit("setDriftVelocity", "mm/ns",
+                                        fDriftVelocity,
+                                        "Set drift velocity in gas");
+    
+    fMessenger->DeclarePropertyWithUnit("setMinEnergy", "eV",
+                                        fMinEnergyDeposit,
+                                        "Set minimum energy deposit threshold for ionization");
+    
+    fMessenger->DeclarePropertyWithUnit("setBarrierEnergy", "keV",
+                                        fCellBarrierEnergy,
+                                        "Set cell barrier energy for electrostatic confinement");
+    
+    fMessenger->DeclarePropertyWithUnit("setWallLoss", "keV",
+                                        fWallEnergyLoss,
+                                        "Set energy loss when crossing cell walls");
 }
 
 void DriftCellSD::Initialize(G4HCofThisEvent* hce)
@@ -74,7 +108,7 @@ G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
     // Use radial distance from wire (cell center)
     G4double radialDistance = sqrt(cellLocalPos.x()*cellLocalPos.x() + cellLocalPos.z()*cellLocalPos.z());
 
-    auto timeDrift = midTime + radialDistance / kDriftVelocity;
+    auto timeDrift = midTime + radialDistance / fDriftVelocity;
         
     // Get other particle properties
     auto charge = step->GetTrack()->GetDefinition()->GetPDGCharge();
@@ -117,7 +151,7 @@ void DriftCellSD::ApplyElectrostaticConfinement(G4Step* step)
         
         G4double kineticEnergy = track->GetKineticEnergy();
 
-        if (kineticEnergy < DTSim::kCellBarrierEnergy) {
+        if (kineticEnergy < fCellBarrierEnergy) {
             // The electron is trapped by the anode potential.
             // It cannot escape the cell.
             
@@ -146,9 +180,9 @@ void DriftCellSD::EmulateWallCrossing(G4Step* step)
             
             G4double currentKE = track->GetKineticEnergy();
             
-            if (currentKE > DTSim::kWallEnergyLoss) {
+            if (currentKE > fWallEnergyLoss) {
                 // It punches through the wall, but loses energy
-                track->SetKineticEnergy(currentKE - DTSim::kWallEnergyLoss);
+                track->SetKineticEnergy(currentKE - fWallEnergyLoss);
             } else {
                 // It gets stuck in the wall
                 track->SetTrackStatus(fStopAndKill);
@@ -229,7 +263,7 @@ bool DriftCellSD::PassHitCriteria(const G4Step* step) const
     
     // Filter: Energy deposition threshold
     auto edep = step->GetTotalEnergyDeposit();
-    if (edep < DTSim::kMinEnergyDeposit) return false;
+    if (edep < fMinEnergyDeposit) return false;
 
     return true;
 }

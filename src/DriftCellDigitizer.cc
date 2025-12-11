@@ -5,6 +5,7 @@
 #include "G4HCofThisEvent.hh"
 #include "G4Event.hh"
 #include "G4SystemOfUnits.hh"
+#include "G4GenericMessenger.hh"
 #include "Randomize.hh"
 
 #include "DriftCellHit.hh"
@@ -22,13 +23,37 @@ static bool CompareHitTimes(const DriftCellHit* a, const DriftCellHit* b) {
 }
 
 DriftCellDigitizer::DriftCellDigitizer(G4String name)
- : G4VDigitizerModule(name)
+ : G4VDigitizerModule(name),
+   fMessenger(nullptr),
+   fEfficiency(DTSim::kEfficiency),
+   fTimeResolution(DTSim::kTimeResolution),
+   fTDCResolution(DTSim::kTDCResolution)
 {
   collectionName.push_back("DriftCellDigiCollection");
+  DefineCommands();
 }
 
 DriftCellDigitizer::~DriftCellDigitizer()
-{}
+{
+  delete fMessenger;
+}
+
+void DriftCellDigitizer::DefineCommands()
+{
+    fMessenger = new G4GenericMessenger(this, "/DTSim/digitizer/",
+                                        "Digitization response parameters");
+    
+    fMessenger->DeclareProperty("setEfficiency", fEfficiency,
+                                "Set detection efficiency (0.0 to 1.0)");
+    
+    fMessenger->DeclarePropertyWithUnit("setTimeResolution", "ns",
+                                        fTimeResolution,
+                                        "Set time resolution (sigma)");
+    
+    fMessenger->DeclarePropertyWithUnit("setTDCResolution", "ns",
+                                        fTDCResolution,
+                                        "Set TDC bin resolution");
+}
 
 void DriftCellDigitizer::Digitize()
 {
@@ -100,7 +125,7 @@ void DriftCellDigitizer::Digitize()
     DriftCellHit* hit = hits[0];
     
     // Apply detection efficiency
-    if (G4UniformRand() > kEfficiency) {
+    if (G4UniformRand() > fEfficiency) {
       continue;  // Hit not detected
     }
     
@@ -108,13 +133,13 @@ void DriftCellDigitizer::Digitize()
     G4double driftTime = hit->GetTimeDrift();
     
     // Apply time resolution smearing (Gaussian)
-    G4double smearedTime = driftTime + G4RandGauss::shoot(0., kTimeResolution);
+    G4double smearedTime = driftTime + G4RandGauss::shoot(0., fTimeResolution);
     
     // Ensure non-negative time
     if (smearedTime < 0.) smearedTime = 0.;
     
     // Convert to TDC counts
-    G4int tdc = static_cast<G4int>(smearedTime / kTDCResolution);
+    G4int tdc = static_cast<G4int>(smearedTime / fTDCResolution);
     
     // Create digi
     DriftCellDigi* digi = new DriftCellDigi();

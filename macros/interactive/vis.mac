@@ -3,7 +3,6 @@
 
 # Load standard settings
 /control/execute macros/settings/verbosity.mac
-/control/execute macros/settings/physics.mac
 /control/execute macros/settings/detector.mac
 
 # load gui settings
@@ -14,6 +13,9 @@
 
 # Initialize kernel
 /run/initialize
+
+# Load physics settings (must be after initialization)
+/control/execute macros/settings/physics.mac
 
 # Disable auto refresh and quieten vis messages whilst scene and trajectories are established
 /vis/viewer/set/autoRefresh false

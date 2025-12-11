@@ -1,6 +1,39 @@
 # Physics settings for DTSim
-# Include this in your macros with: /control/execute macros/settings/physics.mac
+# IMPORTANT: Include this AFTER /run/initialize with: /control/execute macros/settings/physics.mac
+# Drift cell and digitization commands require SDs to be created first (during initialization)
 
+# ========== Drift Cell Physics Parameters ==========
+
+# Drift velocity in the gas mixture (default: 54 µm/ns = 0.054 mm/ns for Ar-CO2 85:15)
+/DTSim/cellSD/setDriftVelocity 0.054 mm/ns
+
+# Minimum energy deposit threshold for ionization (default: 26.6 eV)
+# Energy deposits below this threshold will not create hits
+/DTSim/cellSD/setMinEnergy 26.6 eV
+
+# Cell barrier energy for electrostatic confinement (default: 2.1 keV)
+# Electrons below this energy are trapped and cannot escape the cell
+/DTSim/cellSD/setBarrierEnergy 2.1 keV
+
+# Energy loss when crossing virtual cell walls (default: 1.0 keV)
+# Electrons lose this amount of energy when crossing between cells
+/DTSim/cellSD/setWallLoss 1.0 keV
+
+# ========== Digitization Response Parameters ==========
+
+# Detection efficiency (default: 1.0 = 100%)
+# Fraction of hits that are successfully digitized
+/DTSim/digitizer/setEfficiency 1.0
+
+# Time resolution sigma (default: 2.0 ns)
+# Gaussian smearing applied to drift times
+/DTSim/digitizer/setTimeResolution 2.0 ns
+
+# TDC bin resolution (default: 0.78125 ns = 25ns/32)
+# Time-to-digital converter bin width
+/DTSim/digitizer/setTDCResolution 0.78125 ns
+
+# ========== Physics Cuts ==========
 # Physics cuts (production thresholds for secondary particles)
 # Smaller cuts = more accurate but slower simulation
 # Larger cuts = faster but less detail in secondary particle production
