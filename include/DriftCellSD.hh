@@ -41,6 +41,10 @@ class DriftCellSD : public G4VSensitiveDetector
       G4double fMinEnergyDeposit;
       G4double fCellBarrierEnergy;
       G4double fWallEnergyLoss;
+      
+      // Physics model enable/disable flags
+      G4bool fEnableElectrostaticConfinement;
+      G4bool fEnableWallCrossing;
 };
 
 }

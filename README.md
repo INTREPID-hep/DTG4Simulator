@@ -55,6 +55,8 @@ Todos los parámetros del detector, física y digitalización son configurables 
 /DTSim/cellSD/setMinEnergy 26.6 eV
 /DTSim/cellSD/setBarrierEnergy 2.1 keV
 /DTSim/cellSD/setWallLoss 1.0 keV
+/DTSim/cellSD/enableElectrostaticConfinement true
+/DTSim/cellSD/enableWallCrossing true
 ```
 
 ### Digitalización (DESPUÉS de /run/initialize)

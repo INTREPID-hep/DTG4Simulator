@@ -27,6 +27,10 @@ Los parámetros físicos del detector se pueden ajustar mediante comandos UI (DE
 /DTSim/cellSD/setMinEnergy 26.6 eV             # Umbral de ionización
 /DTSim/cellSD/setBarrierEnergy 2.1 keV         # Confinamiento electrostático
 /DTSim/cellSD/setWallLoss 1.0 keV              # Pérdida en paredes
+
+# Control de modelos físicos
+/DTSim/cellSD/enableElectrostaticConfinement true
+/DTSim/cellSD/enableWallCrossing true
 ```
 
 **Valores por defecto** (de `DTSimConstants.hh`):
@@ -34,6 +38,10 @@ Los parámetros físicos del detector se pueden ajustar mediante comandos UI (DE
 - Energía mínima: 26.6 eV (umbral de ionización)
 - Energía de barrera: 2.1 keV (potencial del ánodo)
 - Pérdida en paredes: 1.0 keV (paredes de aluminio)
+- Confinamiento electrostático: Habilitado
+- Pérdida en paredes: Habilitada
+
+**Nota**: Los modelos físicos (confinamiento y pérdida en paredes) pueden desactivarse independientemente para estudios de sensibilidad o simplificación del modelo.
 
 ### Flujo de Procesamiento
 

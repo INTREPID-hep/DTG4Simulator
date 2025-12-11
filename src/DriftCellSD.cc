@@ -21,7 +21,9 @@ DriftCellSD::DriftCellSD(const G4String& name)
     fDriftVelocity(DTSim::kDriftVelocity),
     fMinEnergyDeposit(DTSim::kMinEnergyDeposit),
     fCellBarrierEnergy(DTSim::kCellBarrierEnergy),
-    fWallEnergyLoss(DTSim::kWallEnergyLoss)
+    fWallEnergyLoss(DTSim::kWallEnergyLoss),
+    fEnableElectrostaticConfinement(true),
+    fEnableWallCrossing(true)
 {
     collectionName.insert("DriftCellHitsCollection");
     DefineCommands();
@@ -52,6 +54,14 @@ void DriftCellSD::DefineCommands()
     fMessenger->DeclarePropertyWithUnit("setWallLoss", "keV",
                                         fWallEnergyLoss,
                                         "Set energy loss when crossing cell walls");
+    
+    fMessenger->DeclareProperty("enableElectrostaticConfinement",
+                                fEnableElectrostaticConfinement,
+                                "Enable/disable electrostatic confinement of low-energy electrons");
+    
+    fMessenger->DeclareProperty("enableWallCrossing",
+                                fEnableWallCrossing,
+                                "Enable/disable energy loss at cell wall crossings");
 }
 
 void DriftCellSD::Initialize(G4HCofThisEvent* hce)
@@ -67,10 +77,14 @@ void DriftCellSD::Initialize(G4HCofThisEvent* hce)
 G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
 {
     // Apply electrostatic confinement (trap low energy electrons)
-    ApplyElectrostaticConfinement(step);
+    if (fEnableElectrostaticConfinement) {
+        ApplyElectrostaticConfinement(step);
+    }
 
     // Apply virtual wall physics (energy loss at boundaries)
-    EmulateWallCrossing(step);
+    if (fEnableWallCrossing) {
+        EmulateWallCrossing(step);
+    }
 
     // Apply hit filters
     if (!PassHitCriteria(step)) return true;

@@ -20,7 +20,9 @@ Todos los comandos del simulador están organizados bajo el prefijo `/DTSim/`:
 │   ├── setDriftVelocity
 │   ├── setMinEnergy
 │   ├── setBarrierEnergy
-│   └── setWallLoss
+│   ├── setWallLoss
+│   ├── enableElectrostaticConfinement
+│   └── enableWallCrossing
 ├── digitizer/         # Parámetros de digitalización (después de /run/initialize)
 │   ├── setEfficiency
 │   ├── setTimeResolution
@@ -154,6 +156,28 @@ Establece la pérdida de energía al cruzar las paredes virtuales entre celdas.
 **Ejemplo**:
 ```bash
 /DTSim/cellSD/setWallLoss 0.5 keV    # Paredes más delgadas
+```
+
+### `/DTSim/cellSD/enableElectrostaticConfinement <bool>`
+Activa/desactiva el modelo de confinamiento electrostático de electrones de baja energía.
+
+**Tipo**: Boolean  
+**Valor por defecto**: `true`  
+**Uso**: Cuando está activo, los electrones con energía cinética menor que `fCellBarrierEnergy` quedan atrapados en la celda y no pueden escapar al ánodo vecino. Desactivar para estudiar el comportamiento sin este efecto físico.  
+**Ejemplo**:
+```bash
+/DTSim/cellSD/enableElectrostaticConfinement false    # Desactivar confinamiento
+```
+
+### `/DTSim/cellSD/enableWallCrossing <bool>`
+Activa/desactiva el modelo de pérdida de energía en paredes virtuales.
+
+**Tipo**: Boolean  
+**Valor por defecto**: `true`  
+**Uso**: Cuando está activo, los electrones y positrones pierden energía (`fWallEnergyLoss`) al cruzar los límites entre celdas. Desactivar para ignorar el efecto de las paredes de aluminio.  
+**Ejemplo**:
+```bash
+/DTSim/cellSD/enableWallCrossing false    # Desactivar pérdida en paredes
 ```
 
 ---

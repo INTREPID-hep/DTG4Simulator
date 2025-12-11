@@ -19,6 +19,10 @@
 # Electrons lose this amount of energy when crossing between cells
 /DTSim/cellSD/setWallLoss 1.0 keV
 
+# Enable/disable physics models
+/DTSim/cellSD/enableElectrostaticConfinement true
+/DTSim/cellSD/enableWallCrossing true
+
 # ========== Digitization Response Parameters ==========
 
 # Detection efficiency (default: 1.0 = 100%)
