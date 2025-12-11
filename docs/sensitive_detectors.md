@@ -17,13 +17,33 @@ El struct `CellID` contiene la jerarquía completa: wheel (-2 a +2), sector (1-1
 
 ## Procesamiento de Hits: DriftCellSD::ProcessHits()
 
+### Configuración Runtime de Parámetros Físicos
+
+Los parámetros físicos del detector se pueden ajustar mediante comandos UI (DESPUÉS de `/run/initialize`):
+
+```bash
+# En macros/settings/physics.mac
+/DTSim/cellSD/setDriftVelocity 0.054 mm/ns     # Velocidad de deriva (54 μm/ns)
+/DTSim/cellSD/setMinEnergy 26.6 eV             # Umbral de ionización
+/DTSim/cellSD/setBarrierEnergy 2.1 keV         # Confinamiento electrostático
+/DTSim/cellSD/setWallLoss 1.0 keV              # Pérdida en paredes
+```
+
+**Valores por defecto** (de `DTSimConstants.hh`):
+- Velocidad de deriva: 54 μm/ns (mezcla Ar-CO2 85:15)
+- Energía mínima: 26.6 eV (umbral de ionización)
+- Energía de barrera: 2.1 keV (potencial del ánodo)
+- Pérdida en paredes: 1.0 keV (paredes de aluminio)
+
+### Flujo de Procesamiento
+
 El método `ProcessHits()` ejecuta para cada step en volúmenes sensibles:
 
-1. **Confinamiento Electrostático**: Simula el atrapamiento de electrones de baja energía (< 2.1 keV) por el potencial del ánodo. Si no tienen suficiente energía para escapar, se detienen y depositan su energía en la celda actual.
+1. **Confinamiento Electrostático**: Simula el atrapamiento de electrones de baja energía (< `fCellBarrierEnergy`, configurable) por el potencial del ánodo. Si no tienen suficiente energía para escapar, se detienen y depositan su energía en la celda actual.
 
-2. **Paredes Virtuales**: Emula la pérdida de energía (1 keV) de partículas cargadas al cruzar los límites entre celdas, simulando las paredes de aluminio que no están en la geometría física.
+2. **Paredes Virtuales**: Emula la pérdida de energía (`fWallEnergyLoss`, configurable) de partículas cargadas al cruzar los límites entre celdas, simulando las paredes de aluminio que no están en la geometría física.
 
-3. **Filtro inicial**: Solo procesa partículas cargadas con energía depositada mayor al umbral (kMinEnergyDeposit = 26.6 eV).
+3. **Filtro inicial**: Solo procesa partículas cargadas con energía depositada mayor al umbral (`fMinEnergyDeposit`, configurable).
 
 4. **Decodificación geométrica**: 
    - Extrae nombre del volumen y copyNo del **PreStepPoint** (asegura obtener el volumen sensible correcto)
@@ -38,7 +58,7 @@ El método `ProcessHits()` ejecuta para cada step en volúmenes sensibles:
 4. **Cálculo de tiempo de drift**: 
    - Tiempo medio del step: midTime = (preTime + postTime) / 2
    - Distancia radial de deriva: r = √(x² + z²) en coordenadas locales de la celda
-   - Tiempo con drift: t_drift = midTime + r / v_drift (v_drift = 54 μm/ns)
+   - Tiempo con drift: t_drift = midTime + r / v_drift (v_drift configurable, por defecto 54 μm/ns)
 
 5. **Información de proceso**: Obtiene el tipo de proceso físico que causó el step (electromagnetic, hadronic, etc.)
 

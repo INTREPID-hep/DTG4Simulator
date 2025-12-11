@@ -55,9 +55,9 @@ Production/batch running macros:
 
 ### Batch Mode
 ```bash
-./exampleDTSim -m macros/batch/run.mac
-./exampleDTSim -m macros/batch/run_highpt.mac
-./exampleDTSim -m macros/batch/run_lowpt.mac
+./exampleDTSim macros/batch/run.mac
+./exampleDTSim macros/batch/run_highpt.mac
+./exampleDTSim macros/batch/run_lowpt.mac
 ```
 
 ### Creating Custom Macros

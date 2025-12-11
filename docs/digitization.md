@@ -20,11 +20,19 @@ El algoritmo de digitalización agrupa los hits por celda y selecciona solo el p
 
 ### Parámetros de Configuración
 
-Los parámetros clave están definidos en `DTSimConstants.hh` (o similar, verificar implementación):
+Los parámetros de digitalización se pueden ajustar mediante comandos UI (DESPUÉS de `/run/initialize`):
 
-*   **Eficiencia**: Probabilidad de que un hit genere señal.
-*   **Resolución Temporal**: Sigma de la gaussiana para el smearing del tiempo.
-*   **Resolución TDC**: Factor de conversión de nanosegundos a cuentas TDC.
+```bash
+# En macros/settings/physics.mac
+/DTSim/digitizer/setEfficiency 1.0            # Eficiencia de detección (0.0-1.0)
+/DTSim/digitizer/setTimeResolution 2.0 ns     # Sigma gaussiano del smearing
+/DTSim/digitizer/setTDCResolution 0.78125 ns  # Resolución del TDC (25ns/32)
+```
+
+**Valores por defecto** (de `DTSimConstants.hh`):
+- Eficiencia: 1.0 (100% de detección)
+- Resolución temporal: 2.0 ns (sigma del smearing gaussiano)
+- Resolución TDC: 0.78125 ns = 25ns/32 (bin estándar del TDC del CMS)
 
 ## Salida: DriftCellDigi
 

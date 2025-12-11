@@ -23,6 +23,31 @@ geometry_concentrator.tg (incluye todos)
 G4tgbVolumeMgr (carga en Geant4)
 ```
 
+## Configuración Runtime
+
+### Selección de Archivo de Geometría
+
+El archivo de geometría se puede cambiar sin recompilar usando comandos UI:
+
+```bash
+# En macros/settings/detector.mac (ANTES de /run/initialize)
+/DTSim/detector/setGeometryFile geometry/geometry_concentrator.tg
+```
+
+**Archivo por defecto**: `geometry/geometry_concentrator.tg` (definido en `DTSimConstants.hh`)
+
+### Control de Sensitive Detectors
+
+Los SDs se pueden activar/desactivar individualmente:
+
+```bash
+# En macros/settings/detector.mac (ANTES de /run/initialize)
+/DTSim/detector/enableDriftSD true      # Hits en celdas de drift
+/DTSim/detector/enableStationSD true    # Truth segments por estación
+```
+
+**Uso**: Desactivar DriftSD para simulaciones solo geométricas o para reducir salida de datos.
+
 ## Script de Generación
 
 El script `generate_geometry_data.py` genera automáticamente:

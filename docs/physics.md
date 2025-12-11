@@ -21,10 +21,32 @@ Adicionalmente, se registra `G4StepLimiterPhysics` para controlar el tamaño de 
 
 ## Campo Magnético
 
-El proyecto simplifica el campo magnético como uniforme en dos regiones: el yoke de hierro con $-2.0 T$ en dirección -Z (retorno del flujo del solenoide del CMS), y el volumen externo con $0 T$ (valores modificables en DTSimConstants.hh, requiere recompilar). El campo se incluye en la simulación únicamente con el flag `-B` en línea de comandos:
+### Configuración Runtime
+
+El campo magnético se configura mediante comandos UI en macros, sin necesidad de recompilación:
 
 ```bash
-./exampleDTSim -B -m run.mac
+# En macros/settings/detector.mac
+/DTSim/detector/useBField true                    # Habilitar campo magnético
+/DTSim/detector/BField/setGlobal 0 0 0 tesla      # Campo global (x, y, z)
+/DTSim/detector/BField/setYoke 0 0 -2.0 tesla     # Campo en yoke (x, y, z)
 ```
 
-Los comandos UI `/field/` permiten ajustar el campo global, mientras que comandos específicos del yoke (`/field/yoke_.../`) controlan el campo local en los volúmenes de hierro.
+**Valores por defecto** (de `DTSimConstants.hh`):
+- Global: (0, 0, 0) T - sin campo fuera del yoke
+- Yoke: (0, 0, -2.0) T - retorno del flujo del solenoide CMS en dirección -Z
+
+### Arquitectura del Campo
+
+El proyecto implementa campos uniformes en dos regiones usando `G4FieldBuilder`:
+
+1. **Campo Global**: Aplicado a todo el volumen World (típicamente cero)
+2. **Campo del Yoke**: Aplicado solo a volúmenes de hierro con nombre "Yoke*"
+
+Los comandos estándar de Geant4 `/field/` también están disponibles para ajustes avanzados.
+
+### Ejemplo: Desactivar Campo
+
+```bash
+/DTSim/detector/useBField false
+```

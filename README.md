@@ -35,8 +35,40 @@ La estructura es **basada en vectores** (una fila por evento) y contiene cuatro 
 
 Para la lista completa de variables, ver [docs/analysis.md](docs/analysis.md).
 
+## Configuración Runtime
+
+Todos los parámetros del detector, física y digitalización son configurables mediante macros sin recompilar:
+
+### Detector y Geometría (ANTES de /run/initialize)
+```bash
+/DTSim/detector/setGeometryFile geometry/geometry_concentrator.tg
+/DTSim/detector/enableDriftSD true
+/DTSim/detector/enableStationSD true
+/DTSim/detector/useBField true
+/DTSim/detector/BField/setGlobal 0 0 0 tesla
+/DTSim/detector/BField/setYoke 0 0 -2.0 tesla
+```
+
+### Física del Detector (DESPUÉS de /run/initialize)
+```bash
+/DTSim/cellSD/setDriftVelocity 0.054 mm/ns    # 54 μm/ns
+/DTSim/cellSD/setMinEnergy 26.6 eV
+/DTSim/cellSD/setBarrierEnergy 2.1 keV
+/DTSim/cellSD/setWallLoss 1.0 keV
+```
+
+### Digitalización (DESPUÉS de /run/initialize)
+```bash
+/DTSim/digitizer/setEfficiency 1.0
+/DTSim/digitizer/setTimeResolution 2.0 ns
+/DTSim/digitizer/setTDCResolution 0.78125 ns
+```
+
+Ver archivos en `macros/settings/` para ejemplos completos. Consultar **[docs/configuration.md](docs/configuration.md)** para referencia completa de todos los comandos disponibles.
+
 ## Documentación Técnica
 
+- **[Configuración Runtime](docs/configuration.md)**: Referencia completa de comandos UI messenger
 - **[Physics List](docs/physics.md)**: FTFP_BERT, campo magnético, control de tracking
 - **[Geometría](docs/geometry.md)**: Generación desde Python con mplDTs, formato Text Geometry
 - **[Primary Generator](docs/primary_generation.md)**: Configuración del particle gun, comandos UI
