@@ -4,6 +4,7 @@
 # Load standard settings
 /control/execute macros/settings/verbosity.mac
 /control/execute macros/settings/physics.mac
+/control/execute macros/settings/detector.mac
 
 # load gui settings
 # /control/execute macros/interactive/gui.mac

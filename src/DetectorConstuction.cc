@@ -10,12 +10,12 @@
 #include "G4Colour.hh"
 #include "G4tgbVolumeMgr.hh"
 #include "G4tgrVolume.hh"
-#include "G4tgrMessenger.hh"
 #include "G4LogicalVolumeStore.hh"
 #include "G4String.hh"
 #include "G4SDManager.hh"
 #include "G4FieldBuilder.hh"
 #include "G4UniformMagField.hh"
+#include "G4GenericMessenger.hh"
 
 #include "CommandLineParser.hh"
 #include "DriftCellSD.hh"
@@ -26,23 +26,61 @@ namespace DTSim
 {
 
 DetectorConstruction::DetectorConstruction()
+  : fDetMessenger(nullptr),
+    fUseBField(true),
+    fGlobalField(DTSim::kGlobalMagneticField),
+    fYokeField(DTSim::kYokeMagneticField),
+    fGeometryFileName(DTSim::kGeometryFileName),
+    fEnableDriftSD(true),
+    fEnableStationSD(true)
 {
-    fMessenger = new G4tgrMessenger;
+    DefineCommands();
 }
 
 DetectorConstruction::~DetectorConstruction()
 {
-    delete fMessenger;
+    delete fDetMessenger;
+}
+
+void DetectorConstruction::DefineCommands()
+{
+    fDetMessenger = new G4GenericMessenger(this, "/DTSim/detector/", 
+                                            "Detector construction control");
+    
+    // Magnetic field commands
+    fDetMessenger->DeclareProperty("useBField", fUseBField,
+                                   "Enable/disable magnetic field");
+    
+    fDetMessenger->DeclarePropertyWithUnit("BField/setGlobal", "tesla", 
+                                           fGlobalField,
+                                           "Set global magnetic field vector (x,y,z)");
+    
+    fDetMessenger->DeclarePropertyWithUnit("BField/setYoke", "tesla", 
+                                           fYokeField,
+                                           "Set yoke magnetic field vector (x,y,z)");
+    
+    // Geometry file command
+    fDetMessenger->DeclareProperty("setGeometryFile", fGeometryFileName,
+                                   "Set path to geometry text file");
+    
+    // Sensitive detector commands
+    fDetMessenger->DeclareProperty("enableDriftSD", fEnableDriftSD,
+                                   "Enable/disable Drift Cell sensitive detector");
+    
+    fDetMessenger->DeclareProperty("enableStationSD", fEnableStationSD,
+                                   "Enable/disable Station sensitive detector");
 }
 
 G4VPhysicalVolume* DetectorConstruction::Construct()
 {
-    fMessenger->SetVerboseLevel(1);
+    // NOTE: Configuration parameters (enableDriftSD, BField, etc.) should be set
+    // BEFORE calling /run/initialize. Runtime geometry reinitialization is not supported.
+    
     G4tgbVolumeMgr* volMgr = G4tgbVolumeMgr::GetInstance();
 
-    // Read geometry from text file
-    G4String geometryFile = "geometry/geometry_concentrator.tg";
-    volMgr->AddTextFile(geometryFile);
+    // Read geometry from text file (now configurable)
+    volMgr->AddTextFile(fGeometryFileName);
+    G4cout << "Loading geometry from: " << fGeometryFileName << G4endl;
     
     // Construct the geometry
     const G4VPhysicalVolume* worldPhys = volMgr->ReadAndConstructDetector();
@@ -74,53 +112,62 @@ void DetectorConstruction::ConstructSDandField()
     // ========== Setup Sensitive Detectors ==========
     auto sdManager = G4SDManager::GetSDMpointer();
     
-    // DriftCell sensitive detector
-    if (!fDriftCellsLogicals.empty()) {
+    // DriftCell sensitive detector (conditionally enabled)
+    if (fEnableDriftSD && !fDriftCellsLogicals.empty()) {
         DTSim::DriftCellSD* driftCellSD = new DTSim::DriftCellSD("/DriftCellSD");
         sdManager->AddNewDetector(driftCellSD);
         
         for (auto* logVol : fDriftCellsLogicals) {
             logVol->SetSensitiveDetector(driftCellSD);
         }
+        G4cout << "DriftCell SD enabled: " << fDriftCellsLogicals.size() << " volumes" << G4endl;
+    } else if (!fEnableDriftSD) {
+        G4cout << "DriftCell SD disabled by configuration" << G4endl;
     }
     
-    // Station sensitive detector (for truth segments)
-    if (!fStationLogicals.empty()) {
+    // Station sensitive detector (conditionally enabled)
+    if (fEnableStationSD && !fStationLogicals.empty()) {
         DTSim::StationSD* stationSD = new DTSim::StationSD("/StationSD");
         sdManager->AddNewDetector(stationSD);
         
         for (auto* logVol : fStationLogicals) {
             logVol->SetSensitiveDetector(stationSD);
         }
+        G4cout << "Station SD enabled: " << fStationLogicals.size() << " volumes" << G4endl;
+    } else if (!fEnableStationSD) {
+        G4cout << "Station SD disabled by configuration" << G4endl;
     }
 
     // ========== Setup Magnetic Fields ==========
-    // Check if magnetic field option was enabled via command line
+    // Check if magnetic field is enabled (both flag and runtime config)
     auto* parser = DTSim::CommandLineParser::Instance();
-    G4bool enableMagneticField = parser->HasFlag("-B");
+    G4bool enableMagneticField = parser->HasFlag("-B") && fUseBField;
     
     if (!enableMagneticField) {
-        G4cout << "Magnetic field disabled (use -B flag to enable)" << G4endl;
+        if (!parser->HasFlag("-B")) {
+            G4cout << "Magnetic field disabled (use -B flag to enable)" << G4endl;
+        } else {
+            G4cout << "Magnetic field disabled by runtime configuration" << G4endl;
+        }
         return;
     }
     
     G4cout << "Building magnetic field configuration..." << G4endl;
+    G4cout << "  Global field: (" << fGlobalField.x()/tesla << ", " 
+           << fGlobalField.y()/tesla << ", " << fGlobalField.z()/tesla << ") T" << G4endl;
+    G4cout << "  Yoke field: (" << fYokeField.x()/tesla << ", " 
+           << fYokeField.y()/tesla << ", " << fYokeField.z()/tesla << ") T" << G4endl;
     
     //    This automatically creates UI commands under /field/
     auto fieldBuilder = G4FieldBuilder::Instance();
     
-    // world magnetic field
-    // DTSim::MagneticField* worldMagField = new DTSim::MagneticField(); currently unused
-    G4MagneticField* worldMagField = new G4UniformMagField(
-        G4ThreeVector(0., 0., DTSim::kOutMagneticField)
-    );
+    // world magnetic field (use configured value)
+    G4MagneticField* worldMagField = new G4UniformMagField(fGlobalField);
     fieldBuilder->SetGlobalField(worldMagField);
     
     if (!fYokeLogicals.empty()) {
-        // Create uniform field for yoke
-        G4MagneticField* yokeMagField = new G4UniformMagField(
-            G4ThreeVector(0., 0., DTSim::kYokeMagneticField)
-        );
+        // Create uniform field for yoke (use configured value)
+        G4MagneticField* yokeMagField = new G4UniformMagField(fYokeField);
         // This creates UI commands under /field/Yokes_...
         fieldBuilder->SetLocalField(yokeMagField, fYokeLogicals[0]);
         

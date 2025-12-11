@@ -108,18 +108,31 @@ void EventAction::fillHitBranches(const G4Event* event, G4AnalysisManager* analy
 {
     // Get hits collection from the event
     G4HCofThisEvent* hce = event->GetHCofThisEvent();
-    if (!hce) return;
+    if (!hce) {
+        analysisManager->FillNtupleIColumn(0, 1, 0);
+        return;
+    }
 
     // Get the collection ID for DriftCellHitsCollection
     G4SDManager* sdManager = G4SDManager::GetSDMpointer();
     G4int hcID = sdManager->GetCollectionID("DriftCellHitsCollection");
-    if (hcID < 0) return;
+    if (hcID < 0) {
+        // SD is disabled or not registered
+        if (event->GetEventID() == 0) {
+            G4cout << "EventAction: DriftCellHitsCollection not found (DriftCell SD may be disabled)" << G4endl;
+        }
+        analysisManager->FillNtupleIColumn(0, 1, 0);
+        return;
+    }
 
     // Retrieve the hits collection
     DriftCellHitsCollection* hitsCollection = 
         static_cast<DriftCellHitsCollection*>(hce->GetHC(hcID));
     
-    if (!hitsCollection) return;
+    if (!hitsCollection) {
+        analysisManager->FillNtupleIColumn(0, 1, 0);
+        return;
+    }
 
     G4int nHits = hitsCollection->entries();
     
@@ -166,6 +179,9 @@ void EventAction::fillDigiBranches(const G4Event* event, G4AnalysisManager* anal
     G4DigiManager* digiMan = G4DigiManager::GetDMpointer();
     G4int dcID = digiMan->GetDigiCollectionID("DriftCellDigiCollection");
     if (dcID < 0) {
+        if (event->GetEventID() == 0) {
+            G4cout << "EventAction: DriftCellDigiCollection not found (digitizer may not have run)" << G4endl;
+        }
         analysisManager->FillNtupleIColumn(0, 16, 0);
         return;
     }
@@ -261,6 +277,10 @@ void EventAction::fillSegmentBranches(const G4Event* event, G4AnalysisManager* a
     G4SDManager* sdManager = G4SDManager::GetSDMpointer();
     G4int hcID = sdManager->GetCollectionID("DTSegmentCollection");
     if (hcID < 0) {
+        // SD is disabled or not registered
+        if (event->GetEventID() == 0) {
+            G4cout << "EventAction: DTSegmentCollection not found (Station SD may be disabled)" << G4endl;
+        }
         analysisManager->FillNtupleIColumn(0, 30, 0);
         return;
     }

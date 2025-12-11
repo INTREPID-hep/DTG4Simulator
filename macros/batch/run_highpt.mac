@@ -4,6 +4,7 @@
 # Load standard settings
 /control/execute macros/settings/verbosity.mac
 /control/execute macros/settings/physics.mac
+/control/execute macros/settings/detector.mac
 
 # Set number of threads for parallel execution
 /run/numberOfThreads 4

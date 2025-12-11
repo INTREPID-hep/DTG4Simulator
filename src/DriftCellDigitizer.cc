@@ -53,7 +53,10 @@ void DriftCellDigitizer::Digitize()
   }
 
   if (fHCID < 0) {
-    G4cerr << "DriftCellDigitizer: Cannot find DriftCellHitsCollection" << G4endl;
+    // This is expected when DriftCell SD is disabled - not an error
+    if (currentEvent->GetEventID() == 0) {
+      G4cout << "DriftCellDigitizer: DriftCellHitsCollection not found (SD may be disabled)" << G4endl;
+    }
     StoreDigiCollection(fDigiCollection);
     return;
   }

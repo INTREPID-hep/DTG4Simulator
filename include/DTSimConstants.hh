@@ -30,11 +30,14 @@ constexpr G4int kMaxSuperLayer = 3;
 constexpr G4int kMinLayer = 1;
 constexpr G4int kMaxLayer = 4;
 
+// Default geometry file
+const G4String kGeometryFileName = "geometry/geometry_concentrator.tg";
+
 // Magnetic field constants
 constexpr G4double kInnerMagneticField = 3.8 *tesla; // Inner solenoid field - currently unused
 const G4double kSolenoidRadius = 3.5*m;   // Inner solenoid radius - currently unused
-constexpr G4double kOutMagneticField = 0.0 *tesla; 
-constexpr G4double kYokeMagneticField = -2.0 *tesla; // Negative for field direction
+const G4ThreeVector kGlobalMagneticField = G4ThreeVector(0.0, 0.0, 0.0*tesla);
+const G4ThreeVector kYokeMagneticField = G4ThreeVector(0.0, 0.0, -2.0*tesla);
 
 // Primary generator defaults
 constexpr G4double kDefaultMomentum = 1000.0*MeV;
