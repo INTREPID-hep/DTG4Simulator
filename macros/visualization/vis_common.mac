@@ -15,3 +15,6 @@
 
 # Draw geometry
 /vis/drawVolume
+
+# random number generator status
+/random/setSeeds 123 213

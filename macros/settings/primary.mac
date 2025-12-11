@@ -3,13 +3,20 @@
 
 # Default primary particle configuration
 # Set primary momentum (default: 300 GeV)
-/DTSim/generator/momentum 300 GeV
+/DTSim/generator/momentum 1000 GeV
 
 # Set momentum spread/sigma (default: 0 MeV)
-/DTSim/generator/sigmaMomentum 100 MeV
+/DTSim/generator/sigmaMomentum 0 MeV
 
-# Set angular divergence/spread (default: 0 degrees)
-/DTSim/generator/sigmaAngle 5 deg
+# Set particle direction using spherical coordinates
+# Theta: polar angle (0=+Z, 90=XY plane, 180=-Z)
+# Phi: azimuthal angle (0=+X, 90=+Y, 180=-X, 270=-Y)
+/DTSim/generator/theta 90 deg
+/DTSim/generator/phi 0 deg
+
+# Set angular spread (default: 2 degrees)
+/DTSim/generator/sigmaTheta 5 deg
+/DTSim/generator/sigmaPhi 5 deg
 
 # Randomize primary particle type (true/false)
 # If true, randomly selects from: e+, mu+, pi+, kaon+, proton
@@ -19,5 +26,9 @@
 # Set specific particle type (used when randomizePrimary is false)
 /gun/particle mu+
 
-# Gun position - start point for primary particles
-/gun/position 0. 0. -0.25 m
+# Primary particle position (default: 0 0 -2.5 m)
+/DTSim/generator/position 0. 0. -0.25 m
+
+# Position spread/sigma (default: 0 0 0 cm)
+# Gaussian randomization around mean position
+/DTSim/generator/sigmaPosition 0. 0. 0. cm

@@ -26,7 +26,6 @@ PrimaryGeneratorAction::PrimaryGeneratorAction()
   fProton = particleTable->FindParticle("proton");
 
   // default particle kinematics
-  fParticleGun->SetParticlePosition(DTSim::kDefaultParticlePosition);
   fParticleGun->SetParticleDefinition(fMuon);
 
   // define commands for this class
@@ -74,9 +73,21 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* event)
   auto ekin = std::sqrt(pp*pp+mass*mass)-mass;
   fParticleGun->SetParticleEnergy(ekin);
 
-  auto angle = (G4UniformRand()-0.5)*fSigmaAngle;
+  // Set direction using spherical coordinates (theta, phi)
+  auto theta = fTheta + (G4UniformRand()-0.5)*fSigmaTheta;
+  auto phi = fPhi + (G4UniformRand()-0.5)*fSigmaPhi;
+  auto sinTheta = std::sin(theta);
+  auto cosTheta = std::cos(theta);
+  auto sinPhi = std::sin(phi);
+  auto cosPhi = std::cos(phi);
   fParticleGun->SetParticleMomentumDirection(
-                  G4ThreeVector(std::cos(angle), std::sin(angle), 0.));
+                  G4ThreeVector(sinTheta*cosPhi, sinTheta*sinPhi, cosTheta));
+
+  // Set position with gaussian spread
+  auto x = fPosition.x() + G4RandGauss::shoot(0., fSigmaPosition.x());
+  auto y = fPosition.y() + G4RandGauss::shoot(0., fSigmaPosition.y());
+  auto z = fPosition.z() + G4RandGauss::shoot(0., fSigmaPosition.z());
+  fParticleGun->SetParticlePosition(G4ThreeVector(x, y, z));
 
   fParticleGun->GeneratePrimaryVertex(event);
 }
@@ -105,13 +116,37 @@ void PrimaryGeneratorAction::DefineCommands()
   sigmaMomentumCmd.SetRange("sp>=0.");
   sigmaMomentumCmd.SetDefaultValue("50.");
 
-  // sigmaAngle command
-  auto& sigmaAngleCmd
-    = fMessenger->DeclarePropertyWithUnit("sigmaAngle", "deg", fSigmaAngle,
-        "Sigma angle divergence of primaries.");
-  sigmaAngleCmd.SetParameterName("t", true);
-  sigmaAngleCmd.SetRange("t>=0.");
-  sigmaAngleCmd.SetDefaultValue("2.");
+  // theta command (polar angle)
+  auto& thetaCmd
+    = fMessenger->DeclarePropertyWithUnit("theta", "deg", fTheta,
+        "Polar angle (0=+Z axis, 90=XY plane, 180=-Z axis).");
+  thetaCmd.SetParameterName("theta", true);
+  thetaCmd.SetRange("theta>=0. && theta<=180.");
+  thetaCmd.SetDefaultValue("90.");
+
+  // phi command (azimuthal angle)
+  auto& phiCmd
+    = fMessenger->DeclarePropertyWithUnit("phi", "deg", fPhi,
+        "Azimuthal angle (rotation around Z axis, 0=+X, 90=+Y).");
+  phiCmd.SetParameterName("phi", true);
+  phiCmd.SetRange("phi>=-180. && phi<=360.");
+  phiCmd.SetDefaultValue("0.");
+
+  // sigmaTheta command
+  auto& sigmaThetaCmd
+    = fMessenger->DeclarePropertyWithUnit("sigmaTheta", "deg", fSigmaTheta,
+        "Sigma spread of polar angle.");
+  sigmaThetaCmd.SetParameterName("st", true);
+  sigmaThetaCmd.SetRange("st>=0.");
+  sigmaThetaCmd.SetDefaultValue("2.");
+
+  // sigmaPhi command
+  auto& sigmaPhiCmd
+    = fMessenger->DeclarePropertyWithUnit("sigmaPhi", "deg", fSigmaPhi,
+        "Sigma spread of azimuthal angle.");
+  sigmaPhiCmd.SetParameterName("sp", true);
+  sigmaPhiCmd.SetRange("sp>=0.");
+  sigmaPhiCmd.SetDefaultValue("2.");
 
   // randomizePrimary command
   auto& randomCmd
@@ -124,6 +159,20 @@ void PrimaryGeneratorAction::DefineCommands()
   randomCmd.SetGuidance(guidance);
   randomCmd.SetParameterName("flg", true);
   randomCmd.SetDefaultValue("true");
+
+  // position command
+  auto& positionCmd
+    = fMessenger->DeclarePropertyWithUnit("position", "m", fPosition,
+        "Mean position of primaries (x, y, z).");
+  positionCmd.SetParameterName("x", "y", "z", true);
+  positionCmd.SetDefaultValue("0. 0. -2.5");
+
+  // sigmaPosition command
+  auto& sigmaPositionCmd
+    = fMessenger->DeclarePropertyWithUnit("sigmaPosition", "cm", fSigmaPosition,
+        "Sigma spread of primary position (x, y, z).");
+  sigmaPositionCmd.SetParameterName("sx", "sy", "sz", true);
+  sigmaPositionCmd.SetDefaultValue("0. 0. 0.");
 }
 
 }

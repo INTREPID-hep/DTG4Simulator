@@ -27,11 +27,16 @@ Todos los comandos del simulador están organizados bajo el prefijo `/DTSim/`:
 │   ├── setEfficiency
 │   ├── setTimeResolution
 │   └── setTDCResolution
-└── generator/         # Configuración del generador primario
+├── generator/         # Configuración del generador primario
     ├── randomizePrimary
     ├── momentum
     ├── sigmaMomentum
-    └── sigmaAngle
+    ├── theta
+    ├── phi
+    ├── sigmaTheta
+    ├── sigmaPhi
+    ├── position
+    └── sigmaPosition
 ```
 
 ---
@@ -240,10 +245,77 @@ Establece la dispersión gaussiana del momento.
 
 **Valor por defecto**: `50.0 GeV`
 
-### `/DTSim/generator/sigmaAngle <value> <unit>`
-Establece la dispersión angular.
+### `/DTSim/generator/theta <value> <unit>`
+Establece el ángulo polar de la dirección del haz (coordenadas esféricas).
 
-**Valor por defecto**: `2.0 deg`
+**Tipo**: Double con unidades de ángulo  
+**Rango**: 0° a 180°  
+**Valor por defecto**: `90.0 deg` (perpendicular al eje Z, en plano XY)  
+**Convención**: 
+- 0° = +Z (hacia arriba)
+- 90° = plano XY (perpendicular a Z)
+- 180° = -Z (hacia abajo)
+
+**Ejemplo**:
+```bash
+/DTSim/generator/theta 45 deg    # 45° desde el eje +Z
+/DTSim/generator/theta 0 deg     # Dirección paralela a +Z
+```
+
+### `/DTSim/generator/phi <value> <unit>`
+Establece el ángulo azimutal de la dirección del haz (rotación alrededor del eje Z).
+
+**Tipo**: Double con unidades de ángulo  
+**Rango**: -180° a 360°  
+**Valor por defecto**: `0.0 deg` (+X)  
+**Convención**: 0° = +X, 90° = +Y, 180° = -X, 270° = -Y  
+**Ejemplo**:
+```bash
+/DTSim/generator/phi 90 deg    # Dirección hacia +Y
+```
+
+### `/DTSim/generator/sigmaTheta <value> <unit>`
+Establece la dispersión del ángulo polar.
+
+**Tipo**: Double con unidades de ángulo  
+**Valor por defecto**: `2.0 deg`  
+**Uso**: Divergencia del haz en dirección polar  
+**Ejemplo**:
+```bash
+/DTSim/generator/sigmaTheta 5 deg
+```
+
+### `/DTSim/generator/sigmaPhi <value> <unit>`
+Establece la dispersión del ángulo azimutal.
+
+**Tipo**: Double con unidades de ángulo  
+**Valor por defecto**: `2.0 deg`  
+**Uso**: Divergencia del haz en dirección azimutal  
+**Ejemplo**:
+```bash
+/DTSim/generator/sigmaPhi 5 deg
+```
+
+### `/DTSim/generator/position <x> <y> <z> <unit>`
+Establece la posición inicial de las partículas primarias.
+
+**Tipo**: G4ThreeVector con unidades de longitud  
+**Valor por defecto**: `(0, 0, -2.5) m`  
+**Ejemplo**:
+```bash
+/DTSim/generator/position 0 0 -0.25 m    # Posición más cercana al detector
+```
+
+### `/DTSim/generator/sigmaPosition <sx> <sy> <sz> <unit>`
+Establece la dispersión gaussiana de la posición inicial (spread espacial).
+
+**Tipo**: G4ThreeVector con unidades de longitud  
+**Valor por defecto**: `(0, 0, 0) cm`  
+**Uso**: Simula un haz con extensión espacial  
+**Ejemplo**:
+```bash
+/DTSim/generator/sigmaPosition 1.0 1.0 0.0 cm    # Haz con 1 cm de spread en x-y
+```
 
 ---
 

@@ -37,8 +37,17 @@ class PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
     void SetSigmaMomentum(G4double val) { fSigmaMomentum = val; }
     G4double GetSigmaMomentum() const { return fSigmaMomentum; }
 
-    void SetSigmaAngle(G4double val) { fSigmaAngle = val; }
-    G4double GetSigmaAngle() const { return fSigmaAngle; }
+    void SetTheta(G4double val) { fTheta = val; }
+    G4double GetTheta() const { return fTheta; }
+    
+    void SetPhi(G4double val) { fPhi = val; }
+    G4double GetPhi() const { return fPhi; }
+    
+    void SetSigmaTheta(G4double val) { fSigmaTheta = val; }
+    G4double GetSigmaTheta() const { return fSigmaTheta; }
+    
+    void SetSigmaPhi(G4double val) { fSigmaPhi = val; }
+    G4double GetSigmaPhi() const { return fSigmaPhi; }
 
     void SetRandomize(G4bool val) { fRandomizePrimary = val; }
     G4bool GetRandomize() const { return fRandomizePrimary; }
@@ -55,8 +64,13 @@ class PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
     G4ParticleDefinition* fProton = nullptr;
     G4double fMomentum = DTSim::kDefaultMomentum;
     G4double fSigmaMomentum = DTSim::kDefaultSigmaMomentum;
-    G4double fSigmaAngle = DTSim::kDefaultSigmaAngle;
+    G4double fTheta = 90.0*deg;  // Polar angle (0=+Z, 90=XY plane, 180=-Z)
+    G4double fPhi = 0.0*deg;     // Azimuthal angle (rotation around Z)
+    G4double fSigmaTheta = DTSim::kDefaultSigmaAngle;
+    G4double fSigmaPhi = DTSim::kDefaultSigmaAngle;
     G4bool fRandomizePrimary = true;
+    G4ThreeVector fPosition = DTSim::kDefaultParticlePosition;
+    G4ThreeVector fSigmaPosition = G4ThreeVector(0., 0., 0.);
 };
 
 }

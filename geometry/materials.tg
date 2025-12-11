@@ -4,7 +4,7 @@
 
 // Gas mixture for drift tubes (85% Ar + 15% CO2) by weight fraction
 // Using air density: 1.214 mg/cm3 = 1.214E-3 g/cm3
-:MIXT GasMixture 1.214E-03*g/cm3 2
+:MIXT GasMixture 1.214E-03*g/cm3 2 //5.45E-1*g/cm3 2 
   G4_Ar 0.85
   G4_CARBON_DIOXIDE 0.15
 
