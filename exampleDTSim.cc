@@ -29,7 +29,6 @@
 
 #include "DetectorConstruction.hh"
 #include "ActionInitialization.hh"
-#include "CommandLineParser.hh"
 
 #include "G4RunManagerFactory.hh"
 #include "G4SteppingVerbose.hh"
@@ -41,30 +40,19 @@
 #include "G4UIExecutive.hh"
 
 
-int main(int argc,char** argv)
+int main(int argc, char** argv)
 {
-  // Setup command-line parser (singleton for access in Geant4 classes)
-  auto* parser = DTSim::CommandLineParser::Instance();
-  parser->AddOption("-m,--macro", "Macro file to execute", false, "macros/interactive/vis.mac");
-  parser->AddFlag("-b,--batch", "Run in batch mode (non-interactive)");
-  parser->AddFlag("-B,--magnetic-field", "Include magnetic field in detector");
-  
-  // Parse arguments
-  G4int parseResult = parser->Parse(argc, argv);
-  if (parseResult != 0) {
-    DTSim::CommandLineParser::DeleteInstance();
-    return (parseResult > 0) ? 0 : 1;  // 1 = help (success), -1 = error
-  }
+  // Determine batch mode and macro file from command line
+  G4String macroFileName;
+  G4bool batchMode = false;
 
-  // Get parsed options
-  G4bool batchMode = parser->HasFlag("-b");
-  G4String macroFileName = parser->GetOption("-m");
-
-  // Validate batch mode requirements
-  if (batchMode && macroFileName == "macros/interactive/vis.mac") {
-    G4cerr << "Error: Batch mode (-b) requires a macro file specified with -m" << G4endl;
-    DTSim::CommandLineParser::DeleteInstance();
-    return 1;
+  if (argc > 1) {
+    // First argument is macro file
+    macroFileName = argv[1];
+    batchMode = true;
+  } else {
+    // No arguments = interactive mode with default macro
+    macroFileName = "macros/interactive/vis.mac";
   }
 
   // Setup UI for interactive mode
@@ -113,7 +101,6 @@ int main(int argc,char** argv)
   // Cleanup
   delete visManager;
   delete runManager;
-  DTSim::CommandLineParser::DeleteInstance();
   
   return 0;
 }

@@ -17,7 +17,6 @@
 #include "G4UniformMagField.hh"
 #include "G4GenericMessenger.hh"
 
-#include "CommandLineParser.hh"
 #include "DriftCellSD.hh"
 #include "StationSD.hh"
 #include "DTSimConstants.hh"
@@ -139,16 +138,8 @@ void DetectorConstruction::ConstructSDandField()
     }
 
     // ========== Setup Magnetic Fields ==========
-    // Check if magnetic field is enabled (both flag and runtime config)
-    auto* parser = DTSim::CommandLineParser::Instance();
-    G4bool enableMagneticField = parser->HasFlag("-B") && fUseBField;
-    
-    if (!enableMagneticField) {
-        if (!parser->HasFlag("-B")) {
-            G4cout << "Magnetic field disabled (use -B flag to enable)" << G4endl;
-        } else {
-            G4cout << "Magnetic field disabled by runtime configuration" << G4endl;
-        }
+    if (!fUseBField) {
+        G4cout << "Magnetic field disabled by configuration" << G4endl;
         return;
     }
     

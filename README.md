@@ -19,9 +19,8 @@ mkdir build && cd build
 cmake .. && make -j$(nproc)
 
 # Ejecutar
-./exampleDTSim                    # Modo interactivo con visualización
-./exampleDTSim -b -m run.mac      # Modo batch
-./exampleDTSim -B -m run.mac      # Con campo magnético (-2T en yoke)
+./exampleDTSim                           # Modo interactivo con visualización
+./exampleDTSim macros/batch/run.mac      # Modo batch con macro específico
 ```
 
 ## Salida de Datos
