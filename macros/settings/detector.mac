@@ -15,7 +15,7 @@
 
 # ========== Magnetic Field Configuration ==========
 # Enable/disable magnetic field (also requires -B command line flag)
-/DTSim/detector/useBField true
+/DTSim/detector/useBField false
 
 # Set global magnetic field vector (x, y, z) in tesla
 # Default: (0, 0, 0) T - no global field
@@ -24,18 +24,3 @@
 # Set yoke magnetic field vector (x, y, z) in tesla
 # Default: (0, 0, -2.0) T - matches CMS return yoke field
 /DTSim/detector/BField/setYoke 0 0 -2.0 tesla
-
-# ========== Example Configurations ==========
-
-# Example 1: Disable drift cell hits (geometry only)
-# /DTSim/detector/enableDriftSD false
-
-# Example 2: Custom magnetic field
-# /DTSim/detector/BField/setGlobal 0 0 3.8 tesla
-# /DTSim/detector/BField/setYoke 0 0 -1.8 tesla
-
-# Example 3: No magnetic field
-# /DTSim/detector/useBField false
-
-# Example 4: Alternative geometry file
-# /DTSim/detector/setGeometryFile geometry/alternative_geometry.tg

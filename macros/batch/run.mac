@@ -1,5 +1,5 @@
 # Batch mode execution macro for DTSim
-# Usage: ./exampleDTSim -m macros/batch/run.mac
+# Usage: ./exampleDTSim macros/batch/run.mac
 
 # Load standard settings
 /control/execute macros/settings/verbosity.mac

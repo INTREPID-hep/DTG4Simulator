@@ -246,7 +246,7 @@ def _calculate_sector_bounds(wheel, sector, stations_in_sector):
         return None
     
     # Add safety margins
-    return (r_min - 5.0, r_max + 5.0, z_min - 5.0, z_max + 5.0, 
+    return (r_min - 10.0, r_max + 5.0, z_min - 5.0, z_max + 5.0, 
             (z_max + z_min) / 2.0, valid)
 
 
@@ -491,18 +491,18 @@ def _create_concentrator_file(station_files, yoke_file, template_path, output_pa
 if __name__ == "__main__":
     # Define stations to include (wheel, sector, station)
     stations_to_generate = [
-        (-1, 12, 1),  # MB1
-        (-1, 12, 2),  # MB2
-        (-1, 12, 3),  # MB3
-        (-1, 12, 4),  # MB4
+        # (-1, 12, 1),  # MB1
+        # (-1, 12, 2),  # MB2
+        # (-1, 12, 3),  # MB3
+        # (-1, 12, 4),  # MB4
         (-1, 1, 1),  # MB1
         (-1, 1, 2),  # MB2
-        (-1, 1, 3),  # MB3
-        (-1, 1, 4),  # MB4
-        (-1, 2, 1),  # MB1
-        (-1, 2, 2),  # MB2
-        (-1, 2, 3),  # MB3
-        (-1, 2, 4),  # MB4
+        # (-1, 1, 3),  # MB3
+        # (-1, 1, 4),  # MB4
+        # (-1, 2, 1),  # MB1
+        # (-1, 2, 2),  # MB2
+        # (-1, 2, 3),  # MB3
+        # (-1, 2, 4),  # MB4
     ]
     
     print("Generating DT geometry files...")

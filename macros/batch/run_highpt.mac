@@ -1,5 +1,5 @@
 # High-pT muon batch run for DTSim
-# Usage: ./exampleDTSim -m macros/batch/run_highpt.mac
+# Usage: ./exampleDTSim macros/batch/run_highpt.mac
 
 # Load standard settings
 /control/execute macros/settings/verbosity.mac

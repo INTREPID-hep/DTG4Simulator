@@ -1,5 +1,5 @@
 # Low-pT particle scan batch run for DTSim
-# Usage: ./exampleDTSim -m macros/batch/run_lowpt.mac
+# Usage: ./exampleDTSim macros/batch/run_lowpt.mac
 
 # Load standard settings
 /control/execute macros/settings/verbosity.mac

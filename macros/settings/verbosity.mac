@@ -3,7 +3,6 @@
 
 # Control verbosity
 /control/verbose 2
-/control/saveHistory
 
 # Run manager verbosity
 /run/verbose 2

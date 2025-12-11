@@ -31,7 +31,7 @@
 
 # Time resolution sigma (default: 2.0 ns)
 # Gaussian smearing applied to drift times
-/DTSim/digitizer/setTimeResolution 2.0 ns
+/DTSim/digitizer/setTimeResolution 0.0 ns
 
 # TDC bin resolution (default: 0.78125 ns = 25ns/32)
 # Time-to-digital converter bin width

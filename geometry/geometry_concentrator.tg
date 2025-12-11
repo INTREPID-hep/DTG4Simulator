@@ -28,18 +28,8 @@
 // ============================================================================
 // Station geometries below (generated dynamically)
 // ============================================================================
-#include geometry/stations/station_W-1_Sec12_St1.tg
-#include geometry/stations/station_W-1_Sec12_St2.tg
-#include geometry/stations/station_W-1_Sec12_St3.tg
-#include geometry/stations/station_W-1_Sec12_St4.tg
 #include geometry/stations/station_W-1_Sec1_St1.tg
 #include geometry/stations/station_W-1_Sec1_St2.tg
-#include geometry/stations/station_W-1_Sec1_St3.tg
-#include geometry/stations/station_W-1_Sec1_St4.tg
-#include geometry/stations/station_W-1_Sec2_St1.tg
-#include geometry/stations/station_W-1_Sec2_St2.tg
-#include geometry/stations/station_W-1_Sec2_St3.tg
-#include geometry/stations/station_W-1_Sec2_St4.tg
 #include geometry/yoke.tg
 
 :VIS Station* ON

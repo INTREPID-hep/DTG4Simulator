@@ -2,7 +2,7 @@
 # Include this in your macros with: /control/execute macros/settings/primary.mac
 
 # Default primary particle configuration
-# Set primary momentum (default: 300 GeV)
+# Set primary momentum (default: 1000 GeV)
 /DTSim/generator/momentum 1000 GeV
 
 # Set momentum spread/sigma (default: 0 MeV)
@@ -27,8 +27,8 @@
 /gun/particle mu+
 
 # Primary particle position (default: 0 0 -2.5 m)
-/DTSim/generator/position 0. 0. -0.25 m
+/DTSim/generator/position 0. 0. 0. m
 
 # Position spread/sigma (default: 0 0 0 cm)
 # Gaussian randomization around mean position
-/DTSim/generator/sigmaPosition 0. 0. 0. cm
+/DTSim/generator/sigmaPosition 0. 0. 5. cm
