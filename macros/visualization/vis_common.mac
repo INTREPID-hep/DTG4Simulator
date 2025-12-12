@@ -15,6 +15,3 @@
 
 # Draw geometry
 /vis/drawVolume
-
-# random number generator seed to see always the same events
-/random/setSeeds 123 213

@@ -33,6 +33,9 @@ constexpr G4int kMaxLayer = 4;
 // Default geometry file
 const G4String kGeometryFileName = "geometry/geometry_concentrator.tg";
 
+// Default output file
+const G4String kOutputFileName = "DTG4Simulation";
+
 // Magnetic field constants
 constexpr G4double kInnerMagneticField = 3.8 *tesla; // Inner solenoid field - currently unused
 const G4double kSolenoidRadius = 3.5*m;   // Inner solenoid radius - currently unused

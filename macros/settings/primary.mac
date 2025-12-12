@@ -5,8 +5,8 @@
 # Set primary momentum (default: 1000 GeV)
 /DTSim/generator/momentum 1000 GeV
 
-# Set momentum spread/sigma (default: 0 MeV)
-/DTSim/generator/sigmaMomentum 0 MeV
+# Set momentum spread/sigma (default: 900 MeV)
+/DTSim/generator/sigmaMomentum 900 MeV
 
 # Set particle direction using spherical coordinates
 # Theta: polar angle (0=+Z, 90=XY plane, 180=-Z)
@@ -15,8 +15,8 @@
 /DTSim/generator/phi 0 deg
 
 # Set angular spread (default: 2 degrees)
-/DTSim/generator/sigmaTheta 5 deg
-/DTSim/generator/sigmaPhi 5 deg
+/DTSim/generator/sigmaTheta 10 deg
+/DTSim/generator/sigmaPhi 10 deg
 
 # Randomize primary particle type (true/false)
 # If true, randomly selects from: e+, mu+, pi+, kaon+, proton
@@ -31,4 +31,4 @@
 
 # Position spread/sigma (default: 0 0 0 cm)
 # Gaussian randomization around mean position
-/DTSim/generator/sigmaPosition 0. 0. 5. cm
+/DTSim/generator/sigmaPosition 0. 0. 50. cm

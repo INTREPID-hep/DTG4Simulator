@@ -491,18 +491,18 @@ def _create_concentrator_file(station_files, yoke_file, template_path, output_pa
 if __name__ == "__main__":
     # Define stations to include (wheel, sector, station)
     stations_to_generate = [
-        # (-1, 12, 1),  # MB1
-        # (-1, 12, 2),  # MB2
-        # (-1, 12, 3),  # MB3
-        # (-1, 12, 4),  # MB4
-        (-1, 1, 1),  # MB1
-        (-1, 1, 2),  # MB2
-        # (-1, 1, 3),  # MB3
-        # (-1, 1, 4),  # MB4
-        # (-1, 2, 1),  # MB1
-        # (-1, 2, 2),  # MB2
-        # (-1, 2, 3),  # MB3
-        # (-1, 2, 4),  # MB4
+        (0, 12, 1),  # MB1
+        (0, 12, 2),  # MB2
+        (0, 12, 3),  # MB3
+        (0, 12, 4),  # MB4
+        (0, 1, 1),  # MB1
+        (0, 1, 2),  # MB2
+        (0, 1, 3),  # MB3
+        (0, 1, 4),  # MB4
+        (0, 2, 1),  # MB1
+        (0, 2, 2),  # MB2
+        (0, 2, 3),  # MB3
+        (0, 2, 4),  # MB4
     ]
     
     print("Generating DT geometry files...")

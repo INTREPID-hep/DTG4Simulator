@@ -7,9 +7,13 @@
 # Drift velocity in the gas mixture (default: 54 µm/ns = 0.054 mm/ns for Ar-CO2 85:15)
 /DTSim/cellSD/setDriftVelocity 0.054 mm/ns
 
-# Minimum energy deposit threshold for ionization (default: 26.6 eV)
+# Minimum energy deposit threshold for ionization (default: 26 eV)
 # Energy deposits below this threshold will not create hits
-/DTSim/cellSD/setMinEnergy 26.6 eV
+/DTSim/cellSD/setMinEnergy 26 eV
+
+# Enable/disable physics models
+/DTSim/cellSD/enableElectrostaticConfinement true
+/DTSim/cellSD/enableWallCrossing true
 
 # Cell barrier energy for electrostatic confinement (default: 2.1 keV)
 # Electrons below this energy are trapped and cannot escape the cell
@@ -19,10 +23,6 @@
 # Electrons lose this amount of energy when crossing between cells
 /DTSim/cellSD/setWallLoss 1.0 keV
 
-# Enable/disable physics models
-/DTSim/cellSD/enableElectrostaticConfinement true
-/DTSim/cellSD/enableWallCrossing true
-
 # ========== Digitization Response Parameters ==========
 
 # Detection efficiency (default: 1.0 = 100%)
@@ -31,7 +31,7 @@
 
 # Time resolution sigma (default: 2.0 ns)
 # Gaussian smearing applied to drift times
-/DTSim/digitizer/setTimeResolution 0.0 ns
+/DTSim/digitizer/setTimeResolution 2.0 ns
 
 # TDC bin resolution (default: 0.78125 ns = 25ns/32)
 # Time-to-digital converter bin width
@@ -42,11 +42,11 @@
 # Smaller cuts = more accurate but slower simulation
 # Larger cuts = faster but less detail in secondary particle production
 # Default is typically 0.7 mm (1 mm in some physics lists)
-# /run/setCut 0.1 mm
+# /run/setCut 10 mm
 
 # Set region-specific cuts for fine control
 # Use smaller cuts in sensitive detectors, larger in passive material
-# /run/setCutForRegion <region_name> 0.01 mm
+/run/setCutForRegion StationRegion 42 mm
 
 # Set cuts for specific particles (overrides global cut)
 # /run/setCutForAGivenParticle e- 0.05 mm

@@ -1,15 +1,16 @@
-#!/bin/sh
+#!/bin/bash
 
-echo "Loading Geant4"
-source /cvmfs/geant4.cern.ch/geant4/11.2/x86_64-el9-gcc11-optdeb/bin/geant4.sh
-export G4LIB=/cvmfs/geant4.cern.ch/geant4/11.2/x86_64-el9-gcc11-optdeb/lib64/Geant4-11.2.0/
+# Source the environment setup script
+# This ensures we have the correct compiler and Geant4 version
+echo $(dirname "$0")/setup_lcg.sh
 
+# --- Build Steps ---
 echo "Creating build directory"
-mkdir DTSim_build
+mkdir -p DTSim_build
 cd DTSim_build
 
 echo "Configuring..."
-cmake -DGeant4_DIR=$G4LIB ../
+cmake ../
 
 echo "Compiling..."
 make -j4

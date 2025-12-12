@@ -2,17 +2,26 @@
 
 #include "G4Run.hh"
 #include "G4AnalysisManager.hh"
+#include "G4GenericMessenger.hh"
+
+#include "DTSimConstants.hh"
 
 namespace DTSim
 {
 RunAction::RunAction()
- : G4UserRunAction()
+ : G4UserRunAction(),
+   fMessenger(nullptr),
+   fOutputFileName(DTSim::kOutputFileName)
 {
     auto analysisManager = G4AnalysisManager::Instance();
     
     // Default settings
     analysisManager->SetNtupleDirectoryName("DTG4SimNTuple");
     analysisManager->SetNtupleMerging(true);
+
+    // Define commands
+    fMessenger = new G4GenericMessenger(this, "/DTSim/run/", "Run control");
+    fMessenger->DeclareProperty("setOutputFileName", fOutputFileName, "Set output file name (without extension)");
     
     // Create ntuple for DTG4Sim hits - one row per event with vector branches
     analysisManager->CreateNtuple("DTG4Tree", "DTG4Tree");
@@ -68,6 +77,11 @@ RunAction::RunAction()
     analysisManager->FinishNtuple();
 }
 
+RunAction::~RunAction()
+{
+    delete fMessenger;
+}
+
 void RunAction::BeginOfRunAction(const G4Run* run)
 {
     auto analysisManager = G4AnalysisManager::Instance();
@@ -77,7 +91,13 @@ void RunAction::BeginOfRunAction(const G4Run* run)
     
     
     // Open file first
-    analysisManager->OpenFile("DTG4Simulation_" + std::to_string(runID) + ".root");
+    G4String fileName = fOutputFileName;
+    // If using default name, append run ID to avoid overwriting in sequential runs
+    if (fileName == DTSim::kOutputFileName) {
+        fileName += "_" + std::to_string(runID);
+    }
+    
+    analysisManager->OpenFile(fileName + ".root");
 }
 
 void RunAction::EndOfRunAction(const G4Run* run)

@@ -16,6 +16,7 @@
 #include "G4FieldBuilder.hh"
 #include "G4UniformMagField.hh"
 #include "G4GenericMessenger.hh"
+#include "G4Region.hh"
 
 #include "DriftCellSD.hh"
 #include "StationSD.hh"
@@ -90,6 +91,10 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     fYokeLogicals.clear();
     fStationLogicals.clear();
 
+    // Create a region for DriftCells to allow setting specific cuts
+    G4Region* yokeRegion = new G4Region("YokeRegion");
+    G4Region* stationRegion = new G4Region("StationRegion");
+
     for (auto* logVol : *logVolStore) {
         G4String name = logVol->GetName();
         if (G4StrUtil::contains(name, "DriftCell")) {
@@ -97,9 +102,11 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
         }
         else if (G4StrUtil::contains(name, "Yoke")) {
             fYokeLogicals.push_back(logVol);
+            yokeRegion->AddRootLogicalVolume(logVol);
         }
-        else if (G4StrUtil::contains(name, "Station_")) {
+        else if (G4StrUtil::contains(name, "Station")) {
             fStationLogicals.push_back(logVol);
+            stationRegion->AddRootLogicalVolume(logVol);
         }
     }
     

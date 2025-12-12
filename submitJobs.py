@@ -1,173 +1,204 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
-print ('START')
-
-########   YOU ONLY NEED TO FILL THE AREA BELOW   #########
-########   customization  area #########
-#SprintName = "step1_RAW2DIGI_L1_L1P2GT.py"
-OutputFileName = "l1nano" # base of the output file name, they will be saved in res directory
-OutputFolder = "/eos/cms/store/user/folguera/INTREPID/DTShowers/2024_04_23/"
-
-filtered_datasets = ['pionplus',"pionminus","proton","muon"]   # list of datasets to be processed
-
-# LIST ALL YOUR DATASETS:
-datasets = {
-    'pionplus': {
-        'name': 'pionplus',
-        'njobs': 100,
-        'eventsperjob': 1000,
-        'particle': 'pi+',
-        'energy': 1000,
-        'ouputdir': OutputFolder,
-        'outputfile': 'DTSim_muonShowers',
-        'outputfiletuple': 'DTSimNtuple_muonShowers',
-    },
-    'pionminus': {
-        'name': 'pionminus',
-        'njobs': 100,
-        'eventsperjob': 1000,
-        'particle': 'pi-',
-        'energy': 1000,
-        'ouputdir': OutputFolder,
-        'outputfile': 'DTSim_muonShowers',
-        'outputfiletuple': 'DTSimNtuple_muonShowers',
-    },
-    'proton': {
-        'name': 'proton',
-        'njobs': 100,
-        'eventsperjob': 1000,
-        'particle': 'proton',
-        'energy': 1000,
-        'ouputdir': OutputFolder,
-        'outputfile': 'DTSim_muonShowers',
-        'outputfiletuple': 'DTSimNtuple_muonShowers',
-    },
-    'muon': {
-        'name': 'muon',
-        'njobs': 200,
-        'eventsperjob': 1000,
-        'particle': 'mu-',
-        'energy': 2000,
-        'ouputdir': OutputFolder,
-        'outputfile': 'DTSim_muonShowers',
-        'outputfiletuple': 'DTSimNtuple_muonShowers',
-    },
-}
-queue = "longlunch" # give bsub queue -- 8nm (8 minutes), 1nh (1 hour), 8nh, 1nd (1day), 2nd, 1nw (1 week), 2nw 
-
-########   customization end   #########
-'''import socket
-import datetime
-import platform
-import hashlib
-
-def generate_random_int():
-    # Obtener el nombre del host, la hora actual y la información del sistema
-    hostname = socket.gethostname()
-    current_time = str(datetime.datetime.now())
-    system_info = str(platform.uname())
-
-    # Concatenar todas las cadenas
-    combined_string = hostname + current_time + system_info
-
-    # Generar un hash SHA256 de la cadena combinada
-    hash_object = hashlib.sha256(combined_string.encode())
-
-    # Convertir el hash a un número entero
-    random_int = int(hash_object.hexdigest(), 16)
-
-    return random_int
-'''
+import sys
 import random
-def generate_random_number():
-    random_number = random.randint(1, 100)
-    return random_number
+import time
 
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
 
-print ('do not worry about folder creation:')
-os.system("rm -rf exec")
-os.system("rm -rf /afs/cern.ch/user/f/folguera/workdir/INTREPID/batchlogs")
-os.system("mkdir exec")
-os.system("mkdir /afs/cern.ch/user/f/folguera/workdir/INTREPID/batchlogs")
+# Output directories
+LOG_DIR = "logs"                # Where HTCondor logs will go
+MACRO_DIR = "exec_macs"       # Where generated macro files will go
+OUTPUT_FOLDER = "test"          # Result ROOT files (e.g., /eos/cms/store/...)
 
-for dataset in filtered_datasets:
-    print ("dataset: "+dataset)
-    print ("njobs: "+str(datasets[dataset]['njobs']))
-    print ("eventsperjob: "+str(datasets[dataset]['eventsperjob']))
-    print ("particle: "+datasets[dataset]['particle'])
-    print ("ouputdir: "+datasets[dataset]['ouputdir'])
-    print ("outputfile: "+datasets[dataset]['outputfile'])
-    print()
+# HTCondor Settings
+QUEUE = "workday"               # espresso, microcentury, longlunch, workday, tomorrow, testmatch, nextweek
+EXECUTABLE = "run_wrapper.sh"   # The bash script that runs the job
 
-    # First create the output folder 
-    OutDir = datasets[dataset]['ouputdir']+datasets[dataset]['name']+"/"
-    if not os.path.exists(OutDir):
-        os.makedirs(OutDir)
+#number of threads per job
+N_THREADS = 1
+
+# Datasets to process
+DATASETS = {
+    'Muons': {
+        'events_per_job': 1000,
+        'n_jobs': 5,
+    },
+    # Example of another dataset
+    # 'Pions': {
+    #     'events_per_job': 500,
+    #     'n_jobs': 10,
+    #     'commands': [
+    #         '/gun/particle pi+',
+    #         '/DTSim/generator/momentum 50 GeV', 
+    #         ...
+    #     ]
+    # }
+}
+
+# =============================================================================
+# FUNCTIONS
+# =============================================================================
+
+def create_directories():
+    """Create necessary directories if they don't exist."""
+    # Create main directories
+    for d in [LOG_DIR, MACRO_DIR]:
+        if not os.path.exists(d):
+            os.makedirs(d)
+            print(f"Created directory: {d}")
     
-    path = os.getcwd()
+    # Create log subdirectories for each dataset
+    for name in DATASETS:
+        log_subdir = os.path.join(LOG_DIR, name)
+        if not os.path.exists(log_subdir):
+            os.makedirs(log_subdir)
+            print(f"Created log subdirectory: {log_subdir}")
     
-    #### Creating the single jobs for each dataset... 
-    njobs = int(datasets[dataset]['njobs']) 
-    print("Creating %d jobs" %(njobs))
-    for x in range(1, int(njobs+1)):
-        ##### Creates unique mac files for each job #######
-        tmpfilename="exec/job_%s_%02d.mac" %(datasets[dataset]['name'],x)
-        with open(tmpfilename, 'w') as fout:
-            fout.write("/run/numberOfThreads 4\n")
-            fout.write("/control/cout/ignoreThreadsExcept 0\n")
-            fout.write("/run/initialize\n")
-            fout.write("/DTSim/generator/randomizePrimary FALSE\n")
-            fout.write("/DTSim/generator/sigmaMomentum 2.\n")
-            fout.write("/DTSim/generator/sigmaAngle 2.\n")
-            fout.write("/random/setSeeds %d %d\n" %(x*2+11,x*101))
-            fout.write("/run/verbose 1\n")
-            fout.write("/run/printProgress 0\n")
-            fout.write("/gun/particle "+datasets[dataset]["particle"]+"\n")
-            fout.write("/DTSim/generator/momentum %4.1f GeV\n" %(datasets[dataset]["energy"]))
-            fout.write("/DTSim/field/value 2. tesla\n")
-            fout.write("/analysis/setFileName %s/%s_%s_%dk_%02d\n" %(OutDir,datasets[dataset]['outputfile'],datasets[dataset]['name'],int(datasets[dataset]['eventsperjob']/1000),x))
-            fout.write("/analysis/ntuple/setFileName 0 %s/%s_%s_%dk_%02d\n" %(OutDir,datasets[dataset]['outputfiletuple'],datasets[dataset]['name'],int(datasets[dataset]['eventsperjob']/1000),x)) 
-            fout.write("/run/beamOn "+str(datasets[dataset]['eventsperjob'])+"\n")
-        os.system("chmod 755 %s" %tmpfilename)
+    if not os.path.exists(OUTPUT_FOLDER):
+        try:
+            os.makedirs(OUTPUT_FOLDER)
+            print(f"Created output directory: {OUTPUT_FOLDER}")
+        except OSError:
+            print(f"Warning: Could not create {OUTPUT_FOLDER}. Make sure you have write permissions.")
 
+def create_wrapper_script():
+    """Creates the bash script that runs on the worker node."""
+    content = f"""#!/bin/bash
+# Wrapper script for HTCondor jobs
+# Usage: ./run_wrapper.sh <MACRO_FILE>
 
-        ##### creates jobs #######
-        tmpfilename="exec/job_%s_%02d.sh" %(datasets[dataset]['name'],x)
-        with open(tmpfilename, 'w') as fout:
-            fout.write("#!/bin/sh\n")
-            fout.write("echo\n")
-            fout.write("echo\n")
-            fout.write("echo 'START---------------'\n")
-            fout.write("echo 'WORKDIR ' ${PWD}\n")
-            fout.write("cd "+str(path)+"\n")
-            fout.write("source /cvmfs/geant4.cern.ch/geant4/11.2/x86_64-el9-gcc11-optdeb/bin/geant4.sh\n")
-            fout.write("./exampleDTSim ./exec/job_%s_%02d.mac\n" %(datasets[dataset]['name'],x))
-            fout.write("echo 'STOP---------------'\n")
-            fout.write("echo\n")
-            fout.write("echo\n")
-        os.system("chmod 755 %s" %tmpfilename)
+MACRO_FILE=$1
+
+echo "Starting Job on $(hostname)"
+echo "Date: $(date)"
+echo "Macro: $MACRO_FILE"
+
+# 1. Setup Environment
+# We assume the script is in the submission directory (shared filesystem)
+if [ -f "setup_lcg.sh" ]; then
+    source setup_lcg.sh
+else
+    echo "Error: setup_lcg.sh not found!"
+    exit 1
+fi
+
+# 2. Run Simulation
+# We assume the executable is already compiled in DTSim_build/exampleDTSim
+if [ -f "DTSim_build/exampleDTSim" ]; then
+    ./DTSim_build/exampleDTSim $MACRO_FILE
+else
+    echo "Error: Executable DTSim_build/exampleDTSim not found!"
+    echo "Please run ./compileDTsim.sh before submitting jobs."
+    exit 1
+fi
+
+echo "Job finished at $(date)"
+"""
+    with open(EXECUTABLE, "w") as f:
+        f.write(content)
+    os.chmod(EXECUTABLE, 0o755)
+    print(f"Created wrapper script: {EXECUTABLE}")
+
+def create_submit_file(job_list_file):
+    """Creates the HTCondor submit file."""
+    content = f"""# HTCondor submit file generated by submitJobs.py
+
+executable              = {EXECUTABLE}
+# The macro file path is passed as an argument to the wrapper
+arguments               = $(macro_file)
+
+# Logging - Organized by dataset name
+output                  = {LOG_DIR}/$(dataset_name)/$(ClusterId).$(ProcId).out
+error                   = {LOG_DIR}/$(dataset_name)/$(ClusterId).$(ProcId).err
+log                     = {LOG_DIR}/$(dataset_name)/$(ClusterId).log
+
+# Resources
++JobFlavour             = "{QUEUE}"
+request_cpus            = {N_THREADS}
+
+# Environment
+getenv                  = True
+# requirements            = (OpSysAndVer =?= "CentOS7") || (OpSysAndVer =?= "AlmaLinux9")
+
+# Queue jobs from the list
+# We read two variables: the macro file path and the dataset name
+queue macro_file, dataset_name from {job_list_file}
+"""
+    with open("submit.sub", "w") as f:
+        f.write(content)
+    print("Created HTCondor submit file: submit.sub")
+
+def generate_macros_and_joblist():
+    """Generates individual macro files and the list of jobs."""
+    job_list_file = "job_list.txt"
+    jobs = [] # List of tuples (macro_path, dataset_name)
+
+    print("Generating macros...")
+    
+    # Seed the random number generator with current time
+    random.seed(time.time())
+
+    for name, info in DATASETS.items():
+        for i in range(info['n_jobs']):
+            # Unique tag for this job
+            tag = f"{name}_job{i}"
+            macro_filename = f"{MACRO_DIR}/{tag}.mac"
             
-    ###### create submit.sub file ####
-    with open('submit.sub', 'w') as fout:
-        fout.write("executable              = $(filename)\n")
-        fout.write("arguments               = $(ClusterId)$(ProcId)\n")
-        fout.write("output                  = /afs/cern.ch/user/f/folguera/workdir/INTREPID/batchlogs/$(ClusterId).$(ProcId).out\n")
-        fout.write("error                   = /afs/cern.ch/user/f/folguera/workdir/INTREPID/batchlogs/$(ClusterId).$(ProcId).err\n")
-        fout.write("log                     = /afs/cern.ch/user/f/folguera/workdir/INTREPID/batchlogs/$(ClusterId).log\n")
-        fout.write("on_exit_remove          = (ExitBySignal == False) && (ExitCode == 0)\n")
-        fout.write("max_retries             = 15\n")
-        fout.write("requirements            = Machine =!= LastRemoteHost\n")
-        fout.write('+JobFlavour = "%s"\n' %(queue))
-        fout.write("\n")
-        fout.write("queue filename matching (exec/job_%s*sh)\n" %(datasets[dataset]['name']))
+            # Generate random seeds (using large range for Geant4)
+            seed1 = random.randint(1, 900000000)
+            seed2 = random.randint(1, 900000000)
+
+            # Create the macro content
+            macro_content = f"""# Auto-generated macro for job {tag}
+
+# 1. Define Aliases
+/control/alias nThreads {N_THREADS}
+/control/alias sed1 {seed1}
+/control/alias sed2 {seed2}
+/control/alias outdir {OUTPUT_FOLDER}
+/control/alias tag _{tag}
+
+# 2. Execute Setup
+/control/execute macros/batch/run_setup.mac
+
+# 3. Custom Commands
+"""
+            # Add custom commands from the dataset configuration
+            for cmd in info.get('commands', []):
+                macro_content += f"{cmd}\n"
+
+            # 4. Run
+            macro_content += f"\n/run/beamOn {info['events_per_job']}\n"
+
+            with open(macro_filename, "w") as f:
+                f.write(macro_content)
+            
+            # Store both the filename and the dataset name for the submit file
+            jobs.append((macro_filename, name))
+
+    # Write the list of macros to be processed by HTCondor
+    with open(job_list_file, "w") as f:
+        for macro_path, dataset_name in jobs:
+            f.write(f"{macro_path} {dataset_name}\n")
+            
+    print(f"Generated {len(jobs)} job macros and {job_list_file}")
+    return job_list_file
+
+# =============================================================================
+# MAIN
+# =============================================================================
+
+if __name__ == "__main__":
+    create_directories()
+    create_wrapper_script()
+    job_list = generate_macros_and_joblist()
+    create_submit_file(job_list)
     
     ###### sends bjobs ######
-    os.system("echo submit.sub")
-    os.system("condor_submit submit.sub")
-    print()
-        
-print()
-print( "your jobs:")
-os.system("condor_q")
-print()
-print()
+    # print("\nSubmitting jobs...")
+    # os.system("condor_submit submit.sub")
+    # print( "your jobs:\n")
+    # os.system("condor_q")

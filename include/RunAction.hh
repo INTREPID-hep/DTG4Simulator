@@ -3,9 +3,11 @@
 
 #include "G4UserRunAction.hh"
 #include "G4Types.hh"
+#include "G4String.hh"
 #include <vector>
 
 class G4Run;
+class G4GenericMessenger;
 
 namespace DTSim
 {
@@ -14,11 +16,16 @@ class RunAction : public G4UserRunAction
 {
   public:
     RunAction();
-    ~RunAction() = default;
+    ~RunAction() override;
 
     void BeginOfRunAction(const G4Run*) override;
     void EndOfRunAction(const G4Run*) override;
+
+  private:
+    G4GenericMessenger* fMessenger;
+    G4String fOutputFileName;
     
+  public:
     // Vector storage for hit data (bound to ntuple columns)
     std::vector<G4int> fHit_PDG;
     std::vector<G4int> fHit_Charge;

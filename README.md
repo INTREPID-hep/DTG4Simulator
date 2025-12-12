@@ -86,11 +86,23 @@ python generate_geometry_data.py
 cd ../build && cmake ..  # Copiar nuevos .tg
 ```
 
-## Producción Masiva
+## Producción Masiva (HTCondor)
+
+El script `submitJobs.py` automatiza la generación de macros y el envío de trabajos a HTCondor.
+
+1.  **Configurar**: Editar `submitJobs.py` para definir los datasets, número de jobs, comandos específicos y directorio de salida.
+2.  **Compilar**: Asegurarse de compilar el proyecto en el nodo de envío (`./compileDTsim.sh`).
+3.  **Generar**: Ejecutar `python3 submitJobs.py`. Esto creará:
+    *   `exec_macros/`: Directorio con los macros individuales para cada job.
+    *   `logs/`: Directorio para logs de salida y error (organizados por dataset).
+    *   `run_wrapper.sh`: Script wrapper para ejecutar en los nodos.
+    *   `submit.sub`: Archivo de envío de HTCondor.
+4.  **Enviar**: Ejecutar `condor_submit submit.sub`.
 
 ```bash
-python submitJobs.py  # Genera y ejecuta múltiples jobs
-hadd merged.root DTG4Simulation_*.root  # Combinar salidas
+./compileDTsim.sh        # Compilar primero
+python3 submitJobs.py    # Generar configuración
+condor_submit submit.sub # Enviar al cluster
 ```
 
 ## Estructura del Proyecto

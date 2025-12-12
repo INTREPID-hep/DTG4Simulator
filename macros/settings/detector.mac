@@ -15,7 +15,7 @@
 
 # ========== Magnetic Field Configuration ==========
 # Enable/disable magnetic field (also requires -B command line flag)
-/DTSim/detector/useBField false
+/DTSim/detector/useBField true
 
 # Set global magnetic field vector (x, y, z) in tesla
 # Default: (0, 0, 0) T - no global field
