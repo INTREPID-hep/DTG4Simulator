@@ -65,6 +65,8 @@ RunAction::RunAction()
     analysisManager->CreateNtupleDColumn("gen_pt", fGen_Pt);
     analysisManager->CreateNtupleDColumn("gen_eta", fGen_Eta);
     analysisManager->CreateNtupleDColumn("gen_phi", fGen_Phi);
+    analysisManager->CreateNtupleDColumn("gen_radEnergy", fGen_RadEnergy);
+    analysisManager->CreateNtupleIColumn("gen_nSecondaries", fGen_nSecondaries);
     // Segment columns
     analysisManager->CreateNtupleIColumn("seg_nSegments");
     analysisManager->CreateNtupleIColumn("seg_wheel", fSeg_Wheel);

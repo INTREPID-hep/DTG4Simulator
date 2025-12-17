@@ -65,6 +65,8 @@ class RunAction : public G4UserRunAction
     std::vector<G4double> fGen_Pt;
     std::vector<G4double> fGen_Eta;
     std::vector<G4double> fGen_Phi;
+    std::vector<G4double> fGen_RadEnergy;
+    std::vector<G4int> fGen_nSecondaries;
     
     // Vector storage for segment data (bound to ntuple columns)
     std::vector<G4int> fSeg_Wheel;

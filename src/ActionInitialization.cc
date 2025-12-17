@@ -5,6 +5,7 @@
 #include "PrimaryGeneratorAction.hh"
 #include "RunAction.hh"
 #include "EventAction.hh"
+#include "SteppingAction.hh"
 #include "DriftCellDigitizer.hh"
 
 namespace DTSim
@@ -26,6 +27,9 @@ void ActionInitialization::Build() const
   
   DTSim::EventAction* eventAction = new DTSim::EventAction(runAction);
   SetUserAction(eventAction);
+  
+  DTSim::SteppingAction* steppingAction = new DTSim::SteppingAction(eventAction);
+  SetUserAction(steppingAction);
   
   // Register digitizer module
   G4DigiManager* digiManager = G4DigiManager::GetDMpointer();

@@ -4,6 +4,8 @@
 #include "G4UserEventAction.hh"
 #include "G4AnalysisManager.hh"
 
+#include <map>
+
 class G4Event;
 
 namespace DTSim
@@ -20,8 +22,16 @@ class EventAction : public G4UserEventAction
     void BeginOfEventAction(const G4Event* event) override;
     void EndOfEventAction(const G4Event* event) override;
 
+    // Methods to accumulate radiation info
+    void AddRadiatedEnergy(G4int trackID, G4double energy) { fRadiatedEnergyMap[trackID] += energy; }
+    void AddSecondaryCount(G4int trackID, G4int count) { fSecondaryCountMap[trackID] += count; }
+
   private:
     RunAction* fRunAction;
+    
+    // Radiation counters mapped by TrackID
+    std::map<G4int, G4double> fRadiatedEnergyMap;
+    std::map<G4int, G4int> fSecondaryCountMap;
     
     // Helper functions for filling ntuples
     void clearVectors();

@@ -94,6 +94,8 @@ void EventAction::clearVectors()
     fRunAction->fGen_Pt.clear();
     fRunAction->fGen_Eta.clear();
     fRunAction->fGen_Phi.clear();
+    fRunAction->fGen_RadEnergy.clear();
+    fRunAction->fGen_nSecondaries.clear();
     
     // Clear segment vectors
     fRunAction->fSeg_Wheel.clear();
@@ -106,11 +108,12 @@ void EventAction::clearVectors()
     fRunAction->fSeg_LocalDirY.clear();
     fRunAction->fSeg_LocalDirZ.clear();
     fRunAction->fSeg_GlobalPosX.clear();
-    fRunAction->fSeg_GlobalPosY.clear();
-    fRunAction->fSeg_GlobalPosZ.clear();
-    fRunAction->fSeg_GlobalDirX.clear();
     fRunAction->fSeg_GlobalDirY.clear();
     fRunAction->fSeg_GlobalDirZ.clear();
+
+    // Reset maps
+    fRadiatedEnergyMap.clear();
+    fSecondaryCountMap.clear();
 }
 
 void EventAction::fillHitBranches(const G4Event* event, G4AnalysisManager* analysisManager)
@@ -267,6 +270,11 @@ void EventAction::fillGenBranches(const G4Event* event, G4AnalysisManager* analy
             fRunAction->fGen_Eta.push_back(eta);
             fRunAction->fGen_Phi.push_back(phi);
             
+            // Fill radiation info for this primary
+            G4int trackID = primary->GetTrackID();
+            fRunAction->fGen_RadEnergy.push_back(fRadiatedEnergyMap[trackID]/keV);
+            fRunAction->fGen_nSecondaries.push_back(fSecondaryCountMap[trackID]);
+            
             // Move to next primary in this vertex
             primary = primary->GetNext();
         }
@@ -286,7 +294,7 @@ void EventAction::fillSegmentBranches(const G4Event* event, G4AnalysisManager* a
     G4HCofThisEvent* hce = event->GetHCofThisEvent();
     if (!hce) {
         // No hits collection - fill zero segments
-        analysisManager->FillNtupleIColumn(0, 38, 0);
+        analysisManager->FillNtupleIColumn(0, 40, 0);
         return;
     }
 
@@ -298,7 +306,7 @@ void EventAction::fillSegmentBranches(const G4Event* event, G4AnalysisManager* a
         if (event->GetEventID() == 0) {
             G4cout << "EventAction: DTSegmentCollection not found (Station SD may be disabled)" << G4endl;
         }
-        analysisManager->FillNtupleIColumn(0, 38, 0);
+        analysisManager->FillNtupleIColumn(0, 40, 0);
         return;
     }
 
@@ -307,7 +315,7 @@ void EventAction::fillSegmentBranches(const G4Event* event, G4AnalysisManager* a
         static_cast<DTSegmentCollection*>(hce->GetHC(hcID));
     
     if (!segmentCollection) {
-        analysisManager->FillNtupleIColumn(0, 38, 0);
+        analysisManager->FillNtupleIColumn(0, 40, 0);
         return;
     }
 
@@ -317,7 +325,7 @@ void EventAction::fillSegmentBranches(const G4Event* event, G4AnalysisManager* a
            << event->GetEventID() << " ===" << G4endl;
     
     // Fill scalar column for number of segments
-    analysisManager->FillNtupleIColumn(0, 38, nSegments);
+    analysisManager->FillNtupleIColumn(0, 40, nSegments);
 
     // Loop over all segments and fill RunAction's vectors
     for (G4int i = 0; i < nSegments; i++) {
