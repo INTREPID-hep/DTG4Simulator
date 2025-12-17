@@ -41,6 +41,13 @@ class RunAction : public G4UserRunAction
     std::vector<G4double> fHit_Time;
     std::vector<G4double> fHit_Edep;
     std::vector<G4int> fHit_ProcessType;
+    std::vector<G4int> fHit_TrackID;
+    std::vector<G4int> fHit_ParentID;
+    std::vector<G4double> fHit_TrackLength;
+    std::vector<G4double> fHit_VertexKineticEnergy;
+    std::vector<G4double> fHit_VertexPosX;
+    std::vector<G4double> fHit_VertexPosY;
+    std::vector<G4double> fHit_VertexPosZ;
     
     // Vector storage for digi data (bound to ntuple columns)
     std::vector<G4int> fDigi_Wheel;
@@ -50,6 +57,7 @@ class RunAction : public G4UserRunAction
     std::vector<G4int> fDigi_Layer;
     std::vector<G4int> fDigi_Wire;
     std::vector<G4int> fDigi_TDC;
+    std::vector<G4int> fDigi_TrackID;
     
     // Vector storage for generator-level data (bound to ntuple columns)
     std::vector<G4int> fGen_PDG;

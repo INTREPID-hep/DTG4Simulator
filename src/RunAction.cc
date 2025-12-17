@@ -41,6 +41,13 @@ RunAction::RunAction()
     analysisManager->CreateNtupleDColumn("simHit_time", fHit_Time);
     analysisManager->CreateNtupleDColumn("simHit_edep", fHit_Edep);
     analysisManager->CreateNtupleIColumn("simHit_process_type", fHit_ProcessType);
+    analysisManager->CreateNtupleIColumn("simHit_trackId", fHit_TrackID);
+    analysisManager->CreateNtupleIColumn("simHit_parentId", fHit_ParentID);
+    analysisManager->CreateNtupleDColumn("simHit_trackLength", fHit_TrackLength);
+    analysisManager->CreateNtupleDColumn("simHit_vertexKineticEnergy", fHit_VertexKineticEnergy);
+    analysisManager->CreateNtupleDColumn("simHit_vertexPosX", fHit_VertexPosX);
+    analysisManager->CreateNtupleDColumn("simHit_vertexPosY", fHit_VertexPosY);
+    analysisManager->CreateNtupleDColumn("simHit_vertexPosZ", fHit_VertexPosZ);
     // Digi columns
     analysisManager->CreateNtupleIColumn("digi_nDigis");
     analysisManager->CreateNtupleIColumn("digi_wheel", fDigi_Wheel);
@@ -50,6 +57,7 @@ RunAction::RunAction()
     analysisManager->CreateNtupleIColumn("digi_layer", fDigi_Layer);
     analysisManager->CreateNtupleIColumn("digi_cell", fDigi_Wire);
     analysisManager->CreateNtupleIColumn("digi_TDC", fDigi_TDC);
+    analysisManager->CreateNtupleIColumn("digi_trackId", fDigi_TrackID);
     // Generator columns
     analysisManager->CreateNtupleIColumn("gen_nGenParts");
     analysisManager->CreateNtupleIColumn("gen_pdgId", fGen_PDG);

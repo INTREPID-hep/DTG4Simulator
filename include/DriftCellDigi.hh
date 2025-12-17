@@ -32,18 +32,21 @@ class DriftCellDigi : public G4VDigi
     void SetCellID(const CellID& id) { fCellID = id; }
     void SetTDC(G4int tdc) { fTDC = tdc; }
     void SetGlobalPos(const G4ThreeVector& pos) { fGlobalPos = pos; }
+    void SetTrackID(G4int id) { fTrackID = id; }
     
     // Getters
     G4int GetEventID() const { return fEventID; }
     CellID GetCellID() const { return fCellID; }
     G4int GetTDC() const { return fTDC; }
     G4ThreeVector GetGlobalPos() const { return fGlobalPos; }
+    G4int GetTrackID() const { return fTrackID; }
 
   private:
     G4int fEventID;
     CellID fCellID;
     G4int fTDC;              // Time-to-Digital Converter value (in TDC counts)
     G4ThreeVector fGlobalPos; // Global position of the hit for visualization
+    G4int fTrackID;          // Track ID of the particle that caused the digi
 };
 
 // Define digi collection type

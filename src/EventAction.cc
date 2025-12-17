@@ -5,6 +5,7 @@
 #include "G4DCofThisEvent.hh"
 #include "G4SDManager.hh"
 #include "G4DigiManager.hh"
+#include "G4SystemOfUnits.hh"
 
 #include "RunAction.hh"
 #include "DriftCellHit.hh"
@@ -69,6 +70,13 @@ void EventAction::clearVectors()
     fRunAction->fHit_Time.clear();
     fRunAction->fHit_Edep.clear();
     fRunAction->fHit_ProcessType.clear();
+    fRunAction->fHit_TrackID.clear();
+    fRunAction->fHit_ParentID.clear();
+    fRunAction->fHit_TrackLength.clear();
+    fRunAction->fHit_VertexKineticEnergy.clear();
+    fRunAction->fHit_VertexPosX.clear();
+    fRunAction->fHit_VertexPosY.clear();
+    fRunAction->fHit_VertexPosZ.clear();
     
     // Clear digi vectors
     fRunAction->fDigi_Wheel.clear();
@@ -78,6 +86,7 @@ void EventAction::clearVectors()
     fRunAction->fDigi_Layer.clear();
     fRunAction->fDigi_Wire.clear();
     fRunAction->fDigi_TDC.clear();
+    fRunAction->fDigi_TrackID.clear();
     
     // Clear gen vectors
     fRunAction->fGen_PDG.clear();
@@ -157,12 +166,19 @@ void EventAction::fillHitBranches(const G4Event* event, G4AnalysisManager* analy
         fRunAction->fHit_SuperLayer.push_back(cellID.superLayer);
         fRunAction->fHit_Layer.push_back(cellID.layer);
         fRunAction->fHit_Wire.push_back(cellID.wire);
-        fRunAction->fHit_XLocal.push_back(localPos.x());
-        fRunAction->fHit_YLocal.push_back(localPos.y());
-        fRunAction->fHit_ZLocal.push_back(localPos.z());
-        fRunAction->fHit_Time.push_back(hit->GetTimeDrift());
-        fRunAction->fHit_Edep.push_back(hit->GetEnergyDeposit());
+        fRunAction->fHit_XLocal.push_back(localPos.x()/mm);
+        fRunAction->fHit_YLocal.push_back(localPos.y()/mm);
+        fRunAction->fHit_ZLocal.push_back(localPos.z()/mm);
+        fRunAction->fHit_Time.push_back(hit->GetTimeDrift()/ns);
+        fRunAction->fHit_Edep.push_back(hit->GetEnergyDeposit()/keV);
         fRunAction->fHit_ProcessType.push_back(hit->GetProcessType());
+        fRunAction->fHit_TrackID.push_back(hit->GetTrackID());
+        fRunAction->fHit_ParentID.push_back(hit->GetParentID());
+        fRunAction->fHit_TrackLength.push_back(hit->GetTrackLength()/mm);
+        fRunAction->fHit_VertexKineticEnergy.push_back(hit->GetVertexKineticEnergy()/keV);
+        fRunAction->fHit_VertexPosX.push_back(hit->GetVertexPos().x()/mm);
+        fRunAction->fHit_VertexPosY.push_back(hit->GetVertexPos().y()/mm);
+        fRunAction->fHit_VertexPosZ.push_back(hit->GetVertexPos().z()/mm);
     }    
 }
 
@@ -172,7 +188,7 @@ void EventAction::fillDigiBranches(const G4Event* event, G4AnalysisManager* anal
     G4DCofThisEvent* dce = event->GetDCofThisEvent();
     if (!dce) {
         // No digis - fill zero
-        analysisManager->FillNtupleIColumn(0, 16, 0);
+        analysisManager->FillNtupleIColumn(0, 23, 0);
         return;
     }
     
@@ -182,14 +198,14 @@ void EventAction::fillDigiBranches(const G4Event* event, G4AnalysisManager* anal
         if (event->GetEventID() == 0) {
             G4cout << "EventAction: DriftCellDigiCollection not found (digitizer may not have run)" << G4endl;
         }
-        analysisManager->FillNtupleIColumn(0, 16, 0);
+        analysisManager->FillNtupleIColumn(0, 23, 0);
         return;
     }
     
     DriftCellDigiCollection* digiCollection = 
         static_cast<DriftCellDigiCollection*>(dce->GetDC(dcID));
     if (!digiCollection) {
-        analysisManager->FillNtupleIColumn(0, 16, 0);
+        analysisManager->FillNtupleIColumn(0, 23, 0);
         return;
     }
     
@@ -198,8 +214,8 @@ void EventAction::fillDigiBranches(const G4Event* event, G4AnalysisManager* anal
     G4cout << "=== EventAction: " << nDigis << " digis created in event " 
            << event->GetEventID() << " ===" << G4endl;
     
-    // Fill scalar column for nDigis (column 16)
-    analysisManager->FillNtupleIColumn(0, 16, nDigis);
+    // Fill scalar column for nDigis
+    analysisManager->FillNtupleIColumn(0, 23, nDigis);
     
     // Loop over all digis and fill RunAction's vectors
     for (G4int i = 0; i < nDigis; i++) {
@@ -214,6 +230,7 @@ void EventAction::fillDigiBranches(const G4Event* event, G4AnalysisManager* anal
         fRunAction->fDigi_Layer.push_back(cellID.layer);
         fRunAction->fDigi_Wire.push_back(cellID.wire);
         fRunAction->fDigi_TDC.push_back(digi->GetTDC());
+        fRunAction->fDigi_TrackID.push_back(digi->GetTrackID());
     }
 }
 
@@ -246,7 +263,7 @@ void EventAction::fillGenBranches(const G4Event* event, G4AnalysisManager* analy
             // Fill vectors
             fRunAction->fGen_PDG.push_back(primary->GetPDGcode());
             fRunAction->fGen_Charge.push_back(primary->GetCharge());
-            fRunAction->fGen_Pt.push_back(pt);
+            fRunAction->fGen_Pt.push_back(pt/GeV);
             fRunAction->fGen_Eta.push_back(eta);
             fRunAction->fGen_Phi.push_back(phi);
             
@@ -255,8 +272,8 @@ void EventAction::fillGenBranches(const G4Event* event, G4AnalysisManager* analy
         }
     }
     
-    // Fill scalar column for number of primaries (column 24)
-    analysisManager->FillNtupleIColumn(0, 24, nPrimaries);
+    // Fill scalar column for number of primaries
+    analysisManager->FillNtupleIColumn(0, 32, nPrimaries);
     
     G4cout << "=== EventAction: " << nPrimaries << " primary particles generated in event " 
            << event->GetEventID() << " ===" << G4endl;
@@ -269,7 +286,7 @@ void EventAction::fillSegmentBranches(const G4Event* event, G4AnalysisManager* a
     G4HCofThisEvent* hce = event->GetHCofThisEvent();
     if (!hce) {
         // No hits collection - fill zero segments
-        analysisManager->FillNtupleIColumn(0, 30, 0);
+        analysisManager->FillNtupleIColumn(0, 38, 0);
         return;
     }
 
@@ -281,7 +298,7 @@ void EventAction::fillSegmentBranches(const G4Event* event, G4AnalysisManager* a
         if (event->GetEventID() == 0) {
             G4cout << "EventAction: DTSegmentCollection not found (Station SD may be disabled)" << G4endl;
         }
-        analysisManager->FillNtupleIColumn(0, 30, 0);
+        analysisManager->FillNtupleIColumn(0, 38, 0);
         return;
     }
 
@@ -290,7 +307,7 @@ void EventAction::fillSegmentBranches(const G4Event* event, G4AnalysisManager* a
         static_cast<DTSegmentCollection*>(hce->GetHC(hcID));
     
     if (!segmentCollection) {
-        analysisManager->FillNtupleIColumn(0, 30, 0);
+        analysisManager->FillNtupleIColumn(0, 38, 0);
         return;
     }
 
@@ -299,8 +316,8 @@ void EventAction::fillSegmentBranches(const G4Event* event, G4AnalysisManager* a
     G4cout << "=== EventAction: " << nSegments << " segments collected in event " 
            << event->GetEventID() << " ===" << G4endl;
     
-    // Fill scalar column for number of segments (column 30)
-    analysisManager->FillNtupleIColumn(0, 30, nSegments);
+    // Fill scalar column for number of segments
+    analysisManager->FillNtupleIColumn(0, 38, nSegments);
 
     // Loop over all segments and fill RunAction's vectors
     for (G4int i = 0; i < nSegments; i++) {
@@ -315,15 +332,15 @@ void EventAction::fillSegmentBranches(const G4Event* event, G4AnalysisManager* a
         fRunAction->fSeg_Wheel.push_back(stationID.wheel);
         fRunAction->fSeg_Sector.push_back(stationID.sector);
         fRunAction->fSeg_Station.push_back(stationID.station);
-        fRunAction->fSeg_LocalPosX.push_back(localPos.x());
-        fRunAction->fSeg_LocalPosY.push_back(localPos.y());
-        fRunAction->fSeg_LocalPosZ.push_back(localPos.z());
+        fRunAction->fSeg_LocalPosX.push_back(localPos.x()/mm);
+        fRunAction->fSeg_LocalPosY.push_back(localPos.y()/mm);
+        fRunAction->fSeg_LocalPosZ.push_back(localPos.z()/mm);
         fRunAction->fSeg_LocalDirX.push_back(localDir.x());
         fRunAction->fSeg_LocalDirY.push_back(localDir.y());
         fRunAction->fSeg_LocalDirZ.push_back(localDir.z());
-        fRunAction->fSeg_GlobalPosX.push_back(globalPos.x());
-        fRunAction->fSeg_GlobalPosY.push_back(globalPos.y());
-        fRunAction->fSeg_GlobalPosZ.push_back(globalPos.z());
+        fRunAction->fSeg_GlobalPosX.push_back(globalPos.x()/mm);
+        fRunAction->fSeg_GlobalPosY.push_back(globalPos.y()/mm);
+        fRunAction->fSeg_GlobalPosZ.push_back(globalPos.z()/mm);
         fRunAction->fSeg_GlobalDirX.push_back(globalDir.x());
         fRunAction->fSeg_GlobalDirY.push_back(globalDir.y());
         fRunAction->fSeg_GlobalDirZ.push_back(globalDir.z());

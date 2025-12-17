@@ -40,6 +40,11 @@ class DriftCellHit : public G4VHit
       void SetCellCenterPos(G4ThreeVector pos) { fCellCenterPos = pos; }
       void SetTimeDrift(G4double t)       { fTimeDrift = t; }
       void SetEnergyDeposit(G4double edep) { fEnergyDeposit = edep; }
+      void SetTrackID(G4int id)           { fTrackID = id; }
+      void SetParentID(G4int id)          { fParentID = id; }
+      void SetTrackLength(G4double len)   { fTrackLength = len; }
+      void SetVertexKineticEnergy(G4double e) { fVertexKineticEnergy = e; }
+      void SetVertexPos(G4ThreeVector pos) { fVertexPos = pos; }
 
       // Getters
       G4int GetEventID() const            { return fEventID; }
@@ -52,6 +57,11 @@ class DriftCellHit : public G4VHit
       G4ThreeVector GetCellCenterPos() const { return fCellCenterPos; }
       G4double GetTimeDrift() const       { return fTimeDrift; }
       G4double GetEnergyDeposit() const   { return fEnergyDeposit; }
+      G4int GetTrackID() const            { return fTrackID; }
+      G4int GetParentID() const           { return fParentID; }
+      G4double GetTrackLength() const     { return fTrackLength; }
+      G4double GetVertexKineticEnergy() const { return fVertexKineticEnergy; }
+      G4ThreeVector GetVertexPos() const  { return fVertexPos; }
 
   private:
       G4int fEventID;
@@ -64,6 +74,11 @@ class DriftCellHit : public G4VHit
       G4ThreeVector fCellCenterPos;
       G4double fTimeDrift;
       G4double fEnergyDeposit;
+      G4int fTrackID;
+      G4int fParentID;
+      G4double fTrackLength;
+      G4double fVertexKineticEnergy;
+      G4ThreeVector fVertexPos;
 };
 
 // Define hits collection type

@@ -13,7 +13,7 @@ namespace DTSim
 G4ThreadLocal G4Allocator<DriftCellDigi>* DriftCellDigiAllocator = nullptr;
 
 DriftCellDigi::DriftCellDigi()
- : G4VDigi(), fEventID(-1), fTDC(-1), fGlobalPos(G4ThreeVector())
+ : G4VDigi(), fEventID(-1), fTDC(-1), fGlobalPos(G4ThreeVector()), fTrackID(-1)
 {}
 
 DriftCellDigi::DriftCellDigi(const DriftCellDigi& right)
@@ -23,6 +23,7 @@ DriftCellDigi::DriftCellDigi(const DriftCellDigi& right)
   fCellID = right.fCellID;
   fTDC = right.fTDC;
   fGlobalPos = right.fGlobalPos;
+  fTrackID = right.fTrackID;
 }
 
 DriftCellDigi::~DriftCellDigi()
@@ -34,6 +35,7 @@ DriftCellDigi& DriftCellDigi::operator=(const DriftCellDigi& right)
   fCellID = right.fCellID;
   fTDC = right.fTDC;
   fGlobalPos = right.fGlobalPos;
+  fTrackID = right.fTrackID;
   return *this;
 }
 

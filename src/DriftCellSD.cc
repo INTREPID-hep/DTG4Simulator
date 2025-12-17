@@ -133,6 +133,9 @@ G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
     // Get current event ID
     G4int evt = G4RunManager::GetRunManager()->GetCurrentEvent()->GetEventID();
 
+    // Get track info
+    G4Track* track = step->GetTrack();
+
     // Create a new hit and fill it
     DriftCellHit* hit = new DriftCellHit();
 
@@ -148,6 +151,11 @@ G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
     hit->SetCellCenterPos(cellCenter);
     hit->SetTimeDrift(timeDrift);
     hit->SetEnergyDeposit(edep);
+    hit->SetTrackID(track->GetTrackID());
+    hit->SetParentID(track->GetParentID());
+    hit->SetTrackLength(track->GetTrackLength());
+    hit->SetVertexKineticEnergy(track->GetVertexKineticEnergy());
+    hit->SetVertexPos(track->GetVertexPosition());
 
     // Add hit to collection
     fHitsCollection->insert(hit);

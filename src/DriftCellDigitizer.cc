@@ -147,6 +147,7 @@ void DriftCellDigitizer::Digitize()
     digi->SetCellID(hit->GetCellID());
     digi->SetTDC(tdc);
     digi->SetGlobalPos(hit->GetCellCenterPos());  // Use cell center for visualization
+    digi->SetTrackID(hit->GetTrackID()); // Link to the particle that caused the hit
     
     // Add digi to collection
     fDigiCollection->insert(digi);

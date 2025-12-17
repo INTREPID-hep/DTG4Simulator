@@ -24,7 +24,12 @@ DriftCellHit::DriftCellHit()
    fLocalPos(G4ThreeVector()),
    fGlobalPos(G4ThreeVector()),
    fTimeDrift(-1),
-   fEnergyDeposit(-1)
+   fEnergyDeposit(-1),
+   fTrackID(-1),
+   fParentID(-1),
+   fTrackLength(-1),
+   fVertexKineticEnergy(-1),
+   fVertexPos(G4ThreeVector())
 {}
 
 G4bool DriftCellHit::operator==(const DriftCellHit& right) const
