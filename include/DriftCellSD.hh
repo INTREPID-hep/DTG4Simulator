@@ -30,8 +30,9 @@ class DriftCellSD : public G4VSensitiveDetector
       
       CellID DecodeCellID(const G4String& volumeName, G4int copyNo) const;
       bool PassHitCriteria(const G4Step* step) const;
-      void ApplyElectrostaticConfinement(G4Step* step);
-      void EmulateWallCrossing(G4Step* step);
+      G4bool ApplyElectrostaticConfinement(G4Step* step);
+      G4bool EmulateWallCrossing(G4Step* step);
+      G4bool ApplyWireCut(G4Step* step);
 
       DriftCellHitsCollection* fHitsCollection = nullptr;
       G4GenericMessenger* fMessenger;
@@ -41,10 +42,12 @@ class DriftCellSD : public G4VSensitiveDetector
       G4double fMinEnergyDeposit;
       G4double fCellBarrierEnergy;
       G4double fWallEnergyLoss;
+      G4double fWireCutRadius;
       
       // Physics model enable/disable flags
       G4bool fEnableElectrostaticConfinement;
       G4bool fEnableWallCrossing;
+      G4bool fEnableWireCut;
 };
 
 }

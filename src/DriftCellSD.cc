@@ -22,8 +22,10 @@ DriftCellSD::DriftCellSD(const G4String& name)
     fMinEnergyDeposit(DTSim::kMinEnergyDeposit),
     fCellBarrierEnergy(DTSim::kCellBarrierEnergy),
     fWallEnergyLoss(DTSim::kWallEnergyLoss),
+    fWireCutRadius(DTSim::kWireCutRadius),
     fEnableElectrostaticConfinement(true),
-    fEnableWallCrossing(true)
+    fEnableWallCrossing(true),
+    fEnableWireCut(true)
 {
     collectionName.insert("DriftCellHitsCollection");
     DefineCommands();
@@ -62,6 +64,14 @@ void DriftCellSD::DefineCommands()
     fMessenger->DeclareProperty("enableWallCrossing",
                                 fEnableWallCrossing,
                                 "Enable/disable energy loss at cell wall crossings");
+
+    fMessenger->DeclarePropertyWithUnit("setWireCutRadius", "mm",
+                                        fWireCutRadius,
+                                        "Set radius for wire cut (avalanche region)");
+
+    fMessenger->DeclareProperty("enableWireCut",
+                                fEnableWireCut,
+                                "Enable/disable wire cut (avalanche region)");
 }
 
 void DriftCellSD::Initialize(G4HCofThisEvent* hce)
@@ -76,14 +86,21 @@ void DriftCellSD::Initialize(G4HCofThisEvent* hce)
 
 G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
 {
-    // Apply electrostatic confinement (trap low energy electrons)
-    if (fEnableElectrostaticConfinement) {
-        ApplyElectrostaticConfinement(step);
+    G4bool isKilled = false;
+
+    // 1. Wire Cut (Highest Priority)
+    if (fEnableWireCut) {
+        isKilled = ApplyWireCut(step);
     }
 
-    // Apply virtual wall physics (energy loss at boundaries)
-    if (fEnableWallCrossing) {
-        EmulateWallCrossing(step);
+    // 2. Electrostatic Confinement
+    if (!isKilled && fEnableElectrostaticConfinement) {
+        isKilled = ApplyElectrostaticConfinement(step);
+    }
+
+    // 3. Wall Crossing
+    if (!isKilled && fEnableWallCrossing) {
+        isKilled = EmulateWallCrossing(step);
     }
 
     // Apply hit filters
@@ -132,7 +149,7 @@ G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
     G4int processType = process ? process->GetProcessType() : -999;
     // Get current event ID
     G4int evt = G4RunManager::GetRunManager()->GetCurrentEvent()->GetEventID();
-
+    
     // Get track info
     G4Track* track = step->GetTrack();
 
@@ -163,57 +180,124 @@ G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
     return true;
 }
 
-void DriftCellSD::ApplyElectrostaticConfinement(G4Step* step)
+
+G4bool DriftCellSD::ApplyWireCut(G4Step* step)
+{
+    G4Track* track = step->GetTrack();
+
+    // Only apply to negative charged particles
+    // Only apply to secondaries (TrackID > 1) to avoid killing primary muons
+    if (track->GetDefinition()->GetPDGCharge() >= 0.0 || track->GetTrackID() == 1) {
+        return false;
+    }
+
+    // 1. Get position (use step midpoint)
+    G4ThreeVector worldPos = (step->GetPreStepPoint()->GetPosition() + 
+                              step->GetPostStepPoint()->GetPosition()) * 0.5;
+    
+    // 2. Transform to Local Coordinates
+    // We need the touchable from the PreStepPoint to get the correct transform for this volume
+    const G4TouchableHistory* touchable = 
+        static_cast<const G4TouchableHistory*>(step->GetPreStepPoint()->GetTouchable());
+        
+    G4ThreeVector localPos = touchable->GetHistory()->GetTopTransform().TransformPoint(worldPos);
+
+    // 3. Calculate Radius (Assuming wire is along Y-axis)
+    G4double r = std::sqrt(localPos.x()*localPos.x() + localPos.z()*localPos.z());
+
+    // 4. Check and Kill
+    if (r < fWireCutRadius) {
+        // Kill the particle
+        track->SetTrackStatus(fStopAndKill);
+        
+        // Dump all energy into this step (signal generation)
+        step->AddTotalEnergyDeposit(track->GetKineticEnergy());
+        track->SetKineticEnergy(0.0);
+        // G4cout << "Wire Cut Applied: Particle killed at radius " 
+        //        << G4BestUnit(r, "Length") << G4endl;
+        return true; // CAUGHT
+    }
+    return false; // NOT CAUGHT
+}
+
+G4bool DriftCellSD::ApplyElectrostaticConfinement(G4Step* step)
 {
     G4Track* track = step->GetTrack();
     
     // Only apply to negative charged particles
     // Only apply to secondaries (TrackID > 1) to avoid killing primary muons
-    if (track->GetDefinition()->GetPDGCharge() < 0.0 && track->GetTrackID() > 1) {
-        
-        G4double kineticEnergy = track->GetKineticEnergy();
-
-        if (kineticEnergy < fCellBarrierEnergy) {
-            // The electron is trapped by the anode potential.
-            // It cannot escape the cell.
-            
-            // Kill the track so it doesn't propagate to neighbors
-            track->SetTrackStatus(fStopAndKill);
-            
-            // The remaining kinetic energy is dissipated in the gas of THIS cell.
-            // So, we add it to the energy deposit of the current step.
-            step->AddTotalEnergyDeposit(kineticEnergy);
-
-            track->SetKineticEnergy(0.0);
-        }
+    if (track->GetDefinition()->GetPDGCharge() >= 0.0 || track->GetTrackID() == 1) {
+        return false;
     }
+        
+    G4double kineticEnergy = track->GetKineticEnergy();
+
+    if (kineticEnergy < fCellBarrierEnergy) {
+        // The electron is trapped by the anode potential.
+        // It cannot escape the cell.
+        
+        // Kill the track so it doesn't propagate to neighbors
+        track->SetTrackStatus(fStopAndKill);
+        
+        // The remaining kinetic energy is dissipated in the gas of THIS cell.
+        // So, we add it to the energy deposit of the current step.
+        step->AddTotalEnergyDeposit(kineticEnergy);
+
+        track->SetKineticEnergy(0.0);
+        // G4cout << "Electrostatic Confinement Applied: Particle killed with KE " 
+        //        << G4BestUnit(kineticEnergy, "Energy") << G4endl;
+        return true; // Killed
+    }
+
+    return false; // Not killed
 }
 
-void DriftCellSD::EmulateWallCrossing(G4Step* step)
+G4bool DriftCellSD::EmulateWallCrossing(G4Step* step)
 {
     // Check if particle is leaving the cell (crossing a boundary)
-    if (step->GetPostStepPoint()->GetStepStatus() == fGeomBoundary) {
-        
-        G4Track* track = step->GetTrack();
-        
-        // Only affect electrons and positrons (PDG ID 11 and -11)
-        // Neutrals and heavy charged particles are not affected by this thin wall approximation
-        if (std::abs(track->GetDefinition()->GetPDGEncoding()) == 11) {
-            
-            G4double currentKE = track->GetKineticEnergy();
-            
-            if (currentKE > fWallEnergyLoss) {
-                // It punches through the wall, but loses energy
-                track->SetKineticEnergy(currentKE - fWallEnergyLoss);
-            } else {
-                // It gets stuck in the wall
-                track->SetTrackStatus(fStopAndKill);
-                track->SetKineticEnergy(0.0); 
-                // The energy is lost in the wall, NOT deposited in the gas.
-                // So we do NOT add it to step->AddTotalEnergyDeposit().
-            }
-        }
+    if (step->GetPostStepPoint()->GetStepStatus() != fGeomBoundary) {
+        return false;
     }
+    
+    G4Track* track = step->GetTrack();
+    
+    // Only affect electrons and positrons (PDG ID 11 and -11)
+    // Neutrals and heavy charged particles are not affected by this thin wall approximation
+    if (std::abs(track->GetDefinition()->GetPDGEncoding()) != 11) {
+        return false;
+    }
+        
+    G4double currentKE = track->GetKineticEnergy();
+    
+    if (currentKE > fWallEnergyLoss) {
+        // It punches through the wall, but loses energy
+        track->SetKineticEnergy(currentKE - fWallEnergyLoss);
+        // G4cout << "Wall Crossing: Particle KE reduced by " 
+        //        << G4BestUnit(fWallEnergyLoss, "Energy") << G4endl;
+    } else {
+        // It gets stuck in the wall
+        track->SetTrackStatus(fStopAndKill);
+        track->SetKineticEnergy(0.0); 
+        // The energy is lost in the wall, NOT deposited in the gas.
+        // So we do NOT add it to step->AddTotalEnergyDeposit().
+        // G4cout << "Wall Crossing: Particle killed (insufficient KE to cross)" << G4endl;
+        return true; // Killed
+    }
+
+    return false; // Not killed
+}
+
+bool DriftCellSD::PassHitCriteria(const G4Step* step) const
+{
+    // Filter: Neutral particles
+    auto charge = step->GetTrack()->GetDefinition()->GetPDGCharge();
+    if (charge == 0) return false;
+    
+    // Filter: Energy deposition threshold
+    auto edep = step->GetTotalEnergyDeposit();
+    if (edep < fMinEnergyDeposit) return false;
+
+    return true;
 }
 
 CellID DriftCellSD::DecodeCellID(const G4String& volumeName, G4int copyNo) const
@@ -277,18 +361,6 @@ CellID DriftCellSD::DecodeCellID(const G4String& volumeName, G4int copyNo) const
     return cellID;
 }
 
-bool DriftCellSD::PassHitCriteria(const G4Step* step) const
-{
-    // Filter: Neutral particles
-    auto charge = step->GetTrack()->GetDefinition()->GetPDGCharge();
-    if (charge == 0) return false;
-    
-    // Filter: Energy deposition threshold
-    auto edep = step->GetTotalEnergyDeposit();
-    if (edep < fMinEnergyDeposit) return false;
-
-    return true;
-}
 
 void DriftCellSD::EndOfEvent(G4HCofThisEvent* hce)
 {
