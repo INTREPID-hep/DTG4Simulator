@@ -1,8 +1,8 @@
 # Batch mode execution macro for DTSim
 # Usage: ./exampleDTSim macros/batch/run.mac
 
-# Load standard settings
-/control/alias nThreads 6
+# Set aliases for parameters
+/control/alias nThreads 4
 /control/alias sed1 123
 /control/alias sed2 456
 /control/alias outdir .

@@ -17,6 +17,7 @@
 #include "G4UniformMagField.hh"
 #include "G4GenericMessenger.hh"
 #include "G4Region.hh"
+#include "G4UserLimits.hh"
 
 #include "DriftCellSD.hh"
 #include "StationSD.hh"
@@ -32,7 +33,19 @@ DetectorConstruction::DetectorConstruction()
     fYokeField(DTSim::kYokeMagneticField),
     fGeometryFileName(DTSim::kGeometryFileName),
     fEnableDriftSD(true),
-    fEnableStationSD(true)
+    fEnableStationSD(true),
+    // Station limits
+    fStationStepMax(DBL_MAX),
+    fStationTrakMax(DBL_MAX),
+    fStationTimeMax(DBL_MAX),
+    fStationEkinMin(0.),
+    fStationRangMin(0.),
+    // Yoke limits
+    fYokeStepMax(DBL_MAX),
+    fYokeTrakMax(DBL_MAX),
+    fYokeTimeMax(DBL_MAX),
+    fYokeEkinMin(0.),
+    fYokeRangMin(0.)
 {
     DefineCommands();
 }
@@ -40,6 +53,8 @@ DetectorConstruction::DetectorConstruction()
 DetectorConstruction::~DetectorConstruction()
 {
     delete fDetMessenger;
+    delete fStationLimits;
+    delete fYokeLimits;
 }
 
 void DetectorConstruction::DefineCommands()
@@ -69,6 +84,48 @@ void DetectorConstruction::DefineCommands()
     
     fDetMessenger->DeclareProperty("enableStationSD", fEnableStationSD,
                                    "Enable/disable Station sensitive detector");
+
+    // Station User Limits
+    fDetMessenger->DeclarePropertyWithUnit("setStationStepMax", "mm", 
+                                         fStationStepMax, 
+                                         "Set max step limit for StationRegion");
+
+    fDetMessenger->DeclarePropertyWithUnit("setStationTrakMax", "mm", 
+                                         fStationTrakMax, 
+                                         "Set max track length for StationRegion");
+
+    fDetMessenger->DeclarePropertyWithUnit("setStationTimeMax", "ns", 
+                                         fStationTimeMax, 
+                                         "Set max time for StationRegion");
+
+    fDetMessenger->DeclarePropertyWithUnit("setStationEkinMin", "MeV", 
+                                         fStationEkinMin, 
+                                         "Set min kinetic energy for StationRegion");
+
+    fDetMessenger->DeclarePropertyWithUnit("setStationRangMin", "mm", 
+                                         fStationRangMin, 
+                                         "Set min range for StationRegion");
+
+    // Yoke User Limits
+    fDetMessenger->DeclarePropertyWithUnit("setYokeStepMax", "mm", 
+                                         fYokeStepMax, 
+                                         "Set max step limit for YokeRegion");
+
+    fDetMessenger->DeclarePropertyWithUnit("setYokeTrakMax", "mm", 
+                                         fYokeTrakMax, 
+                                         "Set max track length for YokeRegion");
+
+    fDetMessenger->DeclarePropertyWithUnit("setYokeTimeMax", "ns", 
+                                         fYokeTimeMax, 
+                                         "Set max time for YokeRegion");
+
+    fDetMessenger->DeclarePropertyWithUnit("setYokeEkinMin", "MeV", 
+                                         fYokeEkinMin, 
+                                         "Set min kinetic energy for YokeRegion");
+
+    fDetMessenger->DeclarePropertyWithUnit("setYokeRangMin", "mm", 
+                                         fYokeRangMin, 
+                                         "Set min range for YokeRegion");
 }
 
 G4VPhysicalVolume* DetectorConstruction::Construct()
@@ -93,7 +150,20 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     // Create a region for DriftCells to allow setting specific cuts
     G4Region* yokeRegion = new G4Region("YokeRegion");
+    fYokeLimits = new G4UserLimits(fYokeStepMax,
+                                   fYokeTrakMax,
+                                   fYokeTimeMax,
+                                   fYokeEkinMin,
+                                   fYokeRangMin);
+    yokeRegion->SetUserLimits(fYokeLimits);
+
     G4Region* stationRegion = new G4Region("StationRegion");
+    fStationLimits = new G4UserLimits(fStationStepMax,
+                                      fStationTrakMax,
+                                      fStationTimeMax,
+                                      fStationEkinMin,
+                                      fStationRangMin);
+    stationRegion->SetUserLimits(fStationLimits);
 
     for (auto* logVol : *logVolStore) {
         G4String name = logVol->GetName();

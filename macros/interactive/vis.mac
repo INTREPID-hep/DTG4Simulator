@@ -1,40 +1,39 @@
-# Main interactive visualization macro for DTSim
-# Usage: ./exampleDTSim (without arguments)
+# ==============================================================================
+# Main interactive visualization macro for DTSimulator
+# ==============================================================================
 
 # Load standard settings
-/control/execute macros/settings/verbosity.mac
-/control/execute macros/settings/detector.mac
-
-# load gui settings
-# /control/execute macros/interactive/gui.mac
-
-# Set number of threads for parallel execution
+/random/setSeeds 123 213
 /run/numberOfThreads 4
-
-# Initialize kernel
-/run/initialize
-
-# Load physics settings (must be after initialization)
-/control/execute macros/settings/physics.mac
-
-# Disable auto refresh and quieten vis messages whilst scene and trajectories are established
-/vis/viewer/set/autoRefresh false
-/vis/verbose errors
+/control/execute macros/settings/verbosity.mac
 
 # Setup visualization
 /control/execute macros/visualization/vis_common.mac
 /control/execute macros/visualization/vis_scene.mac
 /control/execute macros/visualization/vis_trajectories.mac
 
-# Load primary particle settings
+# load gui settings
+# /control/execute macros/interactive/gui.mac
+
+# Disable auto refresh and quieten vis messages whilst scene and trajectories are established
+/vis/viewer/set/autoRefresh false
+/vis/verbose errors
+
+# Load preInit macros
+/control/execute macros/settings/detector.mac
+/control/execute macros/settings/limits.mac
+
+# Initialize kernel
+/run/initialize
+
+# Load postInit macros
+/control/execute macros/settings/cuts.mac
 /control/execute macros/settings/primary.mac
+/control/execute macros/settings/physics.mac
 
 # Re-establish auto refreshing and verbosity
 /vis/viewer/set/autoRefresh true
 /vis/verbose warnings
-
-# random seeds
-/random/setSeeds 123 213
 
 # Flush viewer to create initial view
 /vis/viewer/flush

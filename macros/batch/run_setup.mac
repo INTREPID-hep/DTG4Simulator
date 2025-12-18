@@ -1,25 +1,26 @@
-# Batch mode execution macro for DTSim
-# Usage: /control/execute macros/batch/run_setup.mac
-
-# Control verbosity
-/control/execute macros/settings/verbosity_quiet.mac
+# ==============================================================================
+# Batch mode execution macro for DTSimulator
+# ==============================================================================
+# this is a template macro for batch execution
+# replace {nThreads}, {outdir}, {tag}, {sed1}, {sed2} with desired values 
+# with /control/alias before use
 
 # Load standard settings
-/control/execute macros/settings/detector.mac
-
-# Set number of threads for parallel execution
+/random/setSeeds {sed1} {sed2}
 /run/numberOfThreads {nThreads}
+/control/execute macros/settings/verbosity_quiet.mac
+
+# Load preInit macros
+/control/execute macros/settings/detector.mac
+/control/execute macros/settings/limits.mac
 
 # Set the output filename
 /DTSim/run/setOutputFileName {outdir}/DTG4Simulation{tag}
 
 # Initialize kernel
-/run/initialize
+/run/Initialize
 
-# Load physics settings (must be after initialization)
-/control/execute macros/settings/physics.mac
-
-# Load primary particle settings
+# Load postInit macros
+/control/execute macros/settings/cuts.mac
 /control/execute macros/settings/primary.mac
-
-/random/setSeeds {sed1} {sed2}
+/control/execute macros/settings/physics.mac

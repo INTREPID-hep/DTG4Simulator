@@ -8,6 +8,7 @@
 class G4VPhysicalVolume;
 class G4LogicalVolume;
 class G4GenericMessenger;
+class G4UserLimits;
 
 namespace DTSim
 {
@@ -38,6 +39,22 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     G4String fGeometryFileName;
     G4bool fEnableDriftSD;
     G4bool fEnableStationSD;
+    
+    // Station User Limits
+    G4double fStationStepMax;
+    G4double fStationTrakMax;
+    G4double fStationTimeMax;
+    G4double fStationEkinMin;
+    G4double fStationRangMin;
+    // Yoke User Limits
+    G4double fYokeStepMax;
+    G4double fYokeTrakMax;
+    G4double fYokeTimeMax;
+    G4double fYokeEkinMin;
+    G4double fYokeRangMin;
+
+    G4UserLimits* fStationLimits;
+    G4UserLimits* fYokeLimits;
 };
 
 }

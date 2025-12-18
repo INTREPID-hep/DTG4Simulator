@@ -1,5 +1,7 @@
-# Physics settings for DTSim
-# IMPORTANT: Include this AFTER /run/initialize with: /control/execute macros/settings/physics.mac
+# ==============================================================================
+# Physics Configurations
+# ==============================================================================
+# IMPORTANT: Include this AFTER /run/initialize
 # Drift cell and digitization commands require SDs to be created first (during initialization)
 
 # ========== Drift Cell Physics Parameters ==========
@@ -36,34 +38,3 @@
 # TDC bin resolution (default: 0.78125 ns = 25ns/32)
 # Time-to-digital converter bin width
 /DTSim/digitizer/setTDCResolution 0.78125 ns
-
-# ========== Physics Cuts ==========
-# Physics cuts (production thresholds for secondary particles)
-# Smaller cuts = more accurate but slower simulation
-# Larger cuts = faster but less detail in secondary particle production
-# Default is typically 0.7 mm (1 mm in some physics lists)
-# /run/setCut 10 mm
-
-# Set region-specific cuts for fine control
-# Use smaller cuts in sensitive detectors, larger in passive material
-/run/setCutForRegion StationRegion 42 mm
-
-# Set cuts for specific particles (overrides global cut)
-# /run/setCutForAGivenParticle e- 0.05 mm
-# /run/setCutForAGivenParticle e+ 0.05 mm
-# /run/setCutForAGivenParticle gamma 0.1 mm
-# /run/setCutForAGivenParticle proton 0.1 mm
-
-# Particle-specific cuts in a region
-# /run/setCutForRegionAndParticle <region_name> e- 0.01 mm
-
-# Apply cuts to specific materials (energy threshold)
-# /run/setCutForMaterial <material_name> 0.05 mm
-
-# Tracking cuts (stop tracking below these energies)
-# Useful to speed up simulation by killing low-energy particles
-# /cuts/setLowEdge 1 keV
-
-# Maximum step length in a region (for accurate field tracking)
-# Important for magnetic field regions
-# /run/setMaxStepSize <region_name> 0.1 mm

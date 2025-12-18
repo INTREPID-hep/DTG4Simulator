@@ -1,0 +1,38 @@
+# ==============================================================================
+# User Limits Configuration
+# ==============================================================================
+# This macro defines the user limits for different regions (Station, Yoke).
+# These commands must be executed BEFORE /run/initialize.
+
+# --- Station Region Limits ---
+# Maximum step size in the Station region
+# /DTSim/detector/setStationStepMax 6.5 mm
+
+# Maximum track length
+# /DTSim/detector/setStationTrakMax 100 m
+
+# Maximum time
+# /DTSim/detector/setStationTimeMax 100 ns
+
+# Minimum kinetic energy
+# /DTSim/detector/setStationEkinMin 0.1 MeV
+
+# Minimum range
+# /DTSim/detector/setStationRangMin 1 mm
+
+
+# --- Yoke Region Limits ---
+# Maximum step size in the Yoke region
+# /DTSim/detector/setYokeStepMax 5 mm
+
+# Maximum track length
+# /DTSim/detector/setYokeTrakMax 10 m
+
+# Maximum time
+# /DTSim/detector/setYokeTimeMax 50 ns
+
+# Minimum kinetic energy
+# /DTSim/detector/setYokeEkinMin 1 MeV
+
+# Minimum range
+# /DTSim/detector/setYokeRangMin 0.5 mm

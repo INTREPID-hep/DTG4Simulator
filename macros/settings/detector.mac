@@ -1,26 +1,27 @@
-# Detector configuration settings for DTSim
-# Include this in your macros BEFORE /run/initialize with: /control/execute macros/settings/detector.mac
-# NOTE: These settings must be configured before initialization. Runtime changes require restarting.
+# ==============================================================================
+# Detector Configuration
+# ==============================================================================
+# This macro defines the detector settings (SDs, Magnetic Field, Geometry).
+# These commands must be executed BEFORE /run/initialize.
 
-# ========== Geometry Configuration ==========
-# Set geometry file to load (relative to working directory)
+# --- Geometry ---
+# Path to the geometry file
 /DTSim/detector/setGeometryFile geometry/geometry_concentrator.tg
 
-# ========== Sensitive Detector Configuration ==========
-# Enable/disable DriftCell sensitive detector (records hits in drift tubes)
+# --- Sensitive Detectors ---
+# Enable/Disable Drift Cell SD
 /DTSim/detector/enableDriftSD true
 
-# Enable/disable Station sensitive detector (records truth segments)
+# Enable/Disable Station SD
 /DTSim/detector/enableStationSD true
 
-# ========== Magnetic Field Configuration ==========
-# Enable/disable magnetic field (also requires -B command line flag)
-/DTSim/detector/useBField true
+# --- Magnetic Field ---
+# Enable/Disable magnetic field
+#<------------------------------ disable for fast testing
+/DTSim/detector/useBField false 
 
-# Set global magnetic field vector (x, y, z) in tesla
-# Default: (0, 0, 0) T - no global field
+# Set global magnetic field (x y z)
 /DTSim/detector/BField/setGlobal 0 0 0 tesla
 
-# Set yoke magnetic field vector (x, y, z) in tesla
-# Default: (0, 0, -2.0) T - matches CMS return yoke field
+# Set yoke magnetic field (x y z)
 /DTSim/detector/BField/setYoke 0 0 -2.0 tesla
