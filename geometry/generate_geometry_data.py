@@ -245,8 +245,8 @@ def _calculate_sector_bounds(wheel, sector, stations_in_sector):
     if not valid:
         return None
     
-    # Add safety margins
-    return (r_min - 10.0, r_max + 5.0, z_min - 5.0, z_max + 5.0, 
+    # Add safety margins (r_min - 100 cm to compensate the presence of the coil)
+    return (r_min - 100.0, r_max + 5.0, z_min - 5.0, z_max + 5.0, 
             (z_max + z_min) / 2.0, valid)
 
 

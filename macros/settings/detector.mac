@@ -18,7 +18,7 @@
 # --- Magnetic Field ---
 # Enable/Disable magnetic field
 #<------------------------------ disable for fast testing
-/DTSim/detector/useBField false 
+/DTSim/detector/useBField true
 
 # Set global magnetic field (x y z)
 /DTSim/detector/BField/setGlobal 0 0 0 tesla

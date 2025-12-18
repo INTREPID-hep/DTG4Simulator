@@ -96,7 +96,6 @@ core.*
 env/
 venv/
 
-/geometry/stations/*.tg
 # Batch submission artifacts
 logs/
 exec_macs/
@@ -104,3 +103,9 @@ test/
 job_list.txt
 run_wrapper.sh
 submit.sub
+
+# geometry files
+*.tg
+!/geometry/materials.tg
+!/geometry/test_geometry.tg
+!/geometry/geometry_concentrator_template.tg
