@@ -5,7 +5,7 @@ import random
 import time
 
 # =============================================================================
-# CONFIGURATION
+# CONFIGURATION - Modify these settings as needed
 # =============================================================================
 
 # Output directories
@@ -20,11 +20,45 @@ EXECUTABLE = "run_wrapper.sh"   # The bash script that runs the job
 #number of threads per job
 N_THREADS = 1
 
+mu_general_settings = [
+    "/DTSim/generator/momentum 1000 GeV",
+    "/DTSim/generator/sigmaMomentum 990 GeV", 
+    "/DTSim/generator/theta 90 deg",
+    "/DTSim/generator/phi 0 deg",
+    "/DTSim/generator/sigmaTheta 30 deg",
+    "/DTSim/generator/sigmaPhi 45 deg",
+]
+
 # Datasets to process
 DATASETS = {
-    'Muons': {
-        'events_per_job': 1000,
+    'Muons_wallCrossing_Confinement_wireCut': {
+        'events_per_job': 2000,
         'n_jobs': 5,
+        'commands': mu_general_settings
+    },
+    'Muons_wallCrossing_Confinement': {
+        'events_per_job': 2000,
+        'n_jobs': 5,
+        'commands': mu_general_settings + [
+            "/DTSim/cellSD/enableWireCut false"
+        ]
+    },
+    'Muons_wallCrossing': {
+        'events_per_job': 2000,
+        'n_jobs': 5,
+        'commands': mu_general_settings + [
+            "/DTSim/cellSD/enableWireCut false",
+            "/DTSim/cellSD/enableElectrostaticConfinement false"
+        ]
+    },
+    'Muons_noFilter': {
+        'events_per_job': 2000,
+        'n_jobs': 5,
+        'commands': mu_general_settings + [
+            "/DTSim/cellSD/enableWireCut false",
+            "/DTSim/cellSD/enableElectrostaticConfinement false",
+            "/DTSim/cellSD/enableWallCrossing false"
+        ]
     },
     # Example of another dataset
     # 'Pions': {
@@ -86,11 +120,11 @@ else
 fi
 
 # 2. Run Simulation
-# We assume the executable is already compiled in DTSim_build/exampleDTSim
-if [ -f "DTSim_build/exampleDTSim" ]; then
-    ./DTSim_build/exampleDTSim $MACRO_FILE
+# We assume the executable is already compiled in build/exampleDTSim
+if [ -f "build/exampleDTSim" ]; then
+    ./build/exampleDTSim $MACRO_FILE
 else
-    echo "Error: Executable DTSim_build/exampleDTSim not found!"
+    echo "Error: Executable build/exampleDTSim not found!"
     echo "Please run ./compileDTsim.sh before submitting jobs."
     exit 1
 fi
@@ -198,7 +232,7 @@ if __name__ == "__main__":
     create_submit_file(job_list)
     
     ###### sends bjobs ######
-    # print("\nSubmitting jobs...")
-    # os.system("condor_submit submit.sub")
-    # print( "your jobs:\n")
-    # os.system("condor_q")
+    print("\nSubmitting jobs...")
+    os.system("condor_submit submit.sub")
+    print( "your jobs:\n")
+    os.system("condor_q")

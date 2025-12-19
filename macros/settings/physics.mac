@@ -16,6 +16,7 @@
 # Enable/disable physics models
 /DTSim/cellSD/enableElectrostaticConfinement true
 /DTSim/cellSD/enableWallCrossing true
+/DTSim/cellSD/enableWireCut true
 
 # Cell barrier energy for electrostatic confinement (default: 2.1 keV)
 # Electrons below this energy are trapped and cannot escape the cell
@@ -24,6 +25,10 @@
 # Energy loss when crossing virtual cell walls (default: 1.0 keV)
 # Electrons lose this amount of energy when crossing between cells
 /DTSim/cellSD/setWallLoss 1.0 keV
+
+# Wire cut radius (default: 5.0 mm)
+# Distance from wire within which electrons are considered collected
+/DTSim/cellSD/setWireCutRadius 5.0 mm
 
 # ========== Digitization Response Parameters ==========
 
