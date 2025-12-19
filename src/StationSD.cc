@@ -1,3 +1,4 @@
+#include "DTSimLogger.hh"
 #include "StationSD.hh"
 #include "DTSimUtils.hh"
 
@@ -76,11 +77,11 @@ G4bool StationSD::ProcessHits(G4Step* step, G4TouchableHistory*)
         G4String volumeName = physVol->GetLogicalVolume()->GetName();
         StationID stationID = DecodeStationID(volumeName);
         
-        if (!stationID.isValid()) {
-            G4cerr << "StationSD Warning: Failed to decode station ID from " 
-                   << volumeName << G4endl;
-            fEntryStepMap.erase(it);
-            return false;
+         if (!stationID.isValid()) {
+             LogWarn("StationSD") << "Failed to decode station ID from " 
+                 << volumeName << G4endl;
+             fEntryStepMap.erase(it);
+             return false;
         }
         
         // Calculate segment properties in global coordinates
@@ -104,6 +105,8 @@ G4bool StationSD::ProcessHits(G4Step* step, G4TouchableHistory*)
         
         // Add segment to collection
         fSegmentCollection->insert(segment);
+
+        LogDebug("StationSD") << *segment << G4endl;
         
         // Clean up entry from map
         fEntryStepMap.erase(it);
@@ -122,7 +125,7 @@ StationID StationSD::DecodeStationID(const G4String& volumeName) const
     stationID.station = ExtractIntAfterToken(volumeName, "_St");
     
     if (!stationID.isValid()) {
-        G4cerr << "StationSD Warning: Failed to decode station ID from " 
+        LogWarn("StationSD") << "Failed to decode station ID from " 
                << volumeName << G4endl;
     }
     
@@ -133,15 +136,14 @@ void StationSD::EndOfEvent(G4HCofThisEvent*)
 {
     // Clear the entry map (handles cases where particles entered but didn't exit)
     if (!fEntryStepMap.empty()) {
-        G4cout << "StationSD: Clearing " << fEntryStepMap.size() 
+        LogDebug("StationSD") << "StationSD: Clearing " << fEntryStepMap.size() 
                << " unmatched entry points at end of event" << G4endl;
         fEntryStepMap.clear();
     }
-    
     // Optional: print summary
     G4int nSegments = fSegmentCollection->entries();
     if (nSegments > 0) {
-        G4cout << "StationSD: Collected " << nSegments << " segments in this event" << G4endl;
+        LogDebug("StationSD") << "StationSD: Collected " << nSegments << " segments in this event" << G4endl;
     }
 }
 

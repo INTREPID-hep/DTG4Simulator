@@ -12,6 +12,7 @@
 #include "DriftCellDigi.hh"
 #include "DriftCellDigitizer.hh"
 #include "DTSegment.hh"
+#include "DTSimLogger.hh"
 
 namespace DTSim
 {
@@ -122,6 +123,8 @@ void EventAction::fillHitBranches(const G4Event* event, G4AnalysisManager* analy
     G4HCofThisEvent* hce = event->GetHCofThisEvent();
     if (!hce) {
         analysisManager->FillNtupleIColumn(0, 1, 0);
+        LogWarn("EventAction") << "No hits collection found in event " 
+            << event->GetEventID() << G4endl;
         return;
     }
 
@@ -131,7 +134,7 @@ void EventAction::fillHitBranches(const G4Event* event, G4AnalysisManager* analy
     if (hcID < 0) {
         // SD is disabled or not registered
         if (event->GetEventID() == 0) {
-            G4cout << "EventAction: DriftCellHitsCollection not found (DriftCell SD may be disabled)" << G4endl;
+            LogWarn("EventAction") << "DriftCellHitsCollection not found (DriftCell SD may be disabled)" << G4endl;
         }
         analysisManager->FillNtupleIColumn(0, 1, 0);
         return;
@@ -143,13 +146,15 @@ void EventAction::fillHitBranches(const G4Event* event, G4AnalysisManager* analy
     
     if (!hitsCollection) {
         analysisManager->FillNtupleIColumn(0, 1, 0);
+        LogWarn("EventAction") << "No DriftCell hits collection found in event " 
+            << event->GetEventID() << G4endl;
         return;
     }
 
     G4int nHits = hitsCollection->entries();
     
-    G4cout << "=== EventAction: " << nHits << " hits collected in event " 
-           << event->GetEventID() << " ===" << G4endl;
+    LogInfo("EventAction") << nHits << " DriftCell hits collected in event " 
+        << event->GetEventID() << G4endl;
     
     // Fill number of hits
     analysisManager->FillNtupleIColumn(0, 1, nHits);
@@ -191,6 +196,8 @@ void EventAction::fillDigiBranches(const G4Event* event, G4AnalysisManager* anal
     G4DCofThisEvent* dce = event->GetDCofThisEvent();
     if (!dce) {
         // No digis - fill zero
+        LogWarn("EventAction") << "No digi collection found in event " 
+            << event->GetEventID() << G4endl;
         analysisManager->FillNtupleIColumn(0, 23, 0);
         return;
     }
@@ -199,7 +206,7 @@ void EventAction::fillDigiBranches(const G4Event* event, G4AnalysisManager* anal
     G4int dcID = digiMan->GetDigiCollectionID("DriftCellDigiCollection");
     if (dcID < 0) {
         if (event->GetEventID() == 0) {
-            G4cout << "EventAction: DriftCellDigiCollection not found (digitizer may not have run)" << G4endl;
+            LogWarn("EventAction") << "DriftCellDigiCollection not found (digitizer may not have run)" << G4endl;
         }
         analysisManager->FillNtupleIColumn(0, 23, 0);
         return;
@@ -209,14 +216,16 @@ void EventAction::fillDigiBranches(const G4Event* event, G4AnalysisManager* anal
         static_cast<DriftCellDigiCollection*>(dce->GetDC(dcID));
     if (!digiCollection) {
         analysisManager->FillNtupleIColumn(0, 23, 0);
+        LogWarn("EventAction") << "No DriftCell digi collection found in event " 
+            << event->GetEventID() << G4endl;
         return;
     }
     
     G4int nDigis = digiCollection->entries();
     
-    G4cout << "=== EventAction: " << nDigis << " digis created in event " 
-           << event->GetEventID() << " ===" << G4endl;
-    
+    LogInfo("EventAction") << nDigis << " digis created in event " 
+        << event->GetEventID() << G4endl;
+
     // Fill scalar column for nDigis
     analysisManager->FillNtupleIColumn(0, 23, nDigis);
     
@@ -283,8 +292,8 @@ void EventAction::fillGenBranches(const G4Event* event, G4AnalysisManager* analy
     // Fill scalar column for number of primaries
     analysisManager->FillNtupleIColumn(0, 32, nPrimaries);
     
-    G4cout << "=== EventAction: " << nPrimaries << " primary particles generated in event " 
-           << event->GetEventID() << " ===" << G4endl;
+    LogInfo("EventAction") << nPrimaries << " primary particles generated in event " 
+        << event->GetEventID() << G4endl;
 }
 
 
@@ -294,6 +303,8 @@ void EventAction::fillSegmentBranches(const G4Event* event, G4AnalysisManager* a
     G4HCofThisEvent* hce = event->GetHCofThisEvent();
     if (!hce) {
         // No hits collection - fill zero segments
+        LogWarn("EventAction") << "No hits collection found in event " 
+            << event->GetEventID() << G4endl;
         analysisManager->FillNtupleIColumn(0, 40, 0);
         return;
     }
@@ -304,7 +315,7 @@ void EventAction::fillSegmentBranches(const G4Event* event, G4AnalysisManager* a
     if (hcID < 0) {
         // SD is disabled or not registered
         if (event->GetEventID() == 0) {
-            G4cout << "EventAction: DTSegmentCollection not found (Station SD may be disabled)" << G4endl;
+            LogWarn("EventAction") << "DTSegmentCollection not found (Station SD may be disabled)" << G4endl;
         }
         analysisManager->FillNtupleIColumn(0, 40, 0);
         return;
@@ -316,13 +327,15 @@ void EventAction::fillSegmentBranches(const G4Event* event, G4AnalysisManager* a
     
     if (!segmentCollection) {
         analysisManager->FillNtupleIColumn(0, 40, 0);
+        LogWarn("EventAction") << "No DTSegment collection found in event " 
+            << event->GetEventID() << G4endl;
         return;
     }
 
     G4int nSegments = segmentCollection->entries();
     
-    G4cout << "=== EventAction: " << nSegments << " segments collected in event " 
-           << event->GetEventID() << " ===" << G4endl;
+    LogInfo("EventAction") << nSegments << " segments collected in event " 
+        << event->GetEventID() << G4endl;
     
     // Fill scalar column for number of segments
     analysisManager->FillNtupleIColumn(0, 40, nSegments);

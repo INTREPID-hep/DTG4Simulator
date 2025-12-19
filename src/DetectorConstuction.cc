@@ -22,6 +22,7 @@
 #include "DriftCellSD.hh"
 #include "StationSD.hh"
 #include "DTSimConstants.hh"
+#include "DTSimLogger.hh"
 
 namespace DTSim
 {
@@ -137,7 +138,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     // Read geometry from text file (now configurable)
     volMgr->AddTextFile(fGeometryFileName);
-    G4cout << "Loading geometry from: " << fGeometryFileName << G4endl;
+    LogInfo("DetectorConstruction") << "Loading geometry from: " << fGeometryFileName << G4endl;
     
     // Construct the geometry
     const G4VPhysicalVolume* worldPhys = volMgr->ReadAndConstructDetector();
@@ -189,50 +190,50 @@ void DetectorConstruction::ConstructSDandField()
     auto sdManager = G4SDManager::GetSDMpointer();
     
     // DriftCell sensitive detector (conditionally enabled)
-    if (fEnableDriftSD && !fDriftCellsLogicals.empty()) {
+    if (!fEnableDriftSD) {
+        LogInfo("DetectorConstruction") << "DriftCell SD disabled by configuration" << G4endl;
+    } else if (!fDriftCellsLogicals.empty()) {
+        LogInfo("DetectorConstruction") << "DriftCell SD enabled: " << fDriftCellsLogicals.size() << " volumes" << G4endl;
         DTSim::DriftCellSD* driftCellSD = new DTSim::DriftCellSD("/DriftCellSD");
         sdManager->AddNewDetector(driftCellSD);
         
         for (auto* logVol : fDriftCellsLogicals) {
             logVol->SetSensitiveDetector(driftCellSD);
         }
-        G4cout << "DriftCell SD enabled: " << fDriftCellsLogicals.size() << " volumes" << G4endl;
-    } else if (!fEnableDriftSD) {
-        G4cout << "DriftCell SD disabled by configuration" << G4endl;
+    } else {
+        LogWarn("DetectorConstruction") << "No DriftCell logical volumes found!" << G4endl;
     }
-    
+
     // Station sensitive detector (conditionally enabled)
-    if (fEnableStationSD && !fStationLogicals.empty()) {
+    if (!fEnableStationSD) {
+        LogInfo("DetectorConstruction") << "Station SD disabled by configuration" << G4endl;
+    } else if (!fStationLogicals.empty()) {
+        LogInfo("DetectorConstruction") << "Station SD enabled: " << fStationLogicals.size() << " volumes" << G4endl;
         DTSim::StationSD* stationSD = new DTSim::StationSD("/StationSD");
         sdManager->AddNewDetector(stationSD);
-        
         for (auto* logVol : fStationLogicals) {
             logVol->SetSensitiveDetector(stationSD);
         }
-        G4cout << "Station SD enabled: " << fStationLogicals.size() << " volumes" << G4endl;
-    } else if (!fEnableStationSD) {
-        G4cout << "Station SD disabled by configuration" << G4endl;
+    } else {
+        LogWarn("DetectorConstruction") << "No Station logical volumes found!" << G4endl;
     }
 
     // ========== Setup Magnetic Fields ==========
     if (!fUseBField) {
-        G4cout << "Magnetic field disabled by configuration" << G4endl;
+        LogInfo("DetectorConstruction") << "Magnetic field disabled by configuration" << G4endl;
         return;
     }
-    
-    G4cout << "Building magnetic field configuration..." << G4endl;
-    G4cout << "  Global field: (" << fGlobalField.x()/tesla << ", " 
-           << fGlobalField.y()/tesla << ", " << fGlobalField.z()/tesla << ") T" << G4endl;
-    G4cout << "  Yoke field: (" << fYokeField.x()/tesla << ", " 
-           << fYokeField.y()/tesla << ", " << fYokeField.z()/tesla << ") T" << G4endl;
-    
-    //    This automatically creates UI commands under /field/
-    auto fieldBuilder = G4FieldBuilder::Instance();
+    LogDebug("DetectorConstruction") << "Building magnetic field configuration..." << G4endl;
+    auto fieldBuilder = G4FieldBuilder::Instance(); // This automatically creates UI commands under /field/
     
     // world magnetic field (use configured value)
     G4MagneticField* worldMagField = new G4UniformMagField(fGlobalField);
     fieldBuilder->SetGlobalField(worldMagField);
+    LogDebug("DetectorConstruction") << "  Global field: (" << fGlobalField.x()/tesla << ", " 
+        << fGlobalField.y()/tesla << ", " << fGlobalField.z()/tesla << ") T" << G4endl;
     
+    LogDebug("DetectorConstruction") << "  Yoke field: (" << fYokeField.x()/tesla << ", " 
+        << fYokeField.y()/tesla << ", " << fYokeField.z()/tesla << ") T" << G4endl;
     if (!fYokeLogicals.empty()) {
         // Create uniform field for yoke (use configured value)
         G4MagneticField* yokeMagField = new G4UniformMagField(fYokeField);
@@ -244,6 +245,8 @@ void DetectorConstruction::ConstructSDandField()
         for (size_t i = 1; i < fYokeLogicals.size(); ++i) {
             fYokeLogicals[i]->SetFieldManager(yokeFieldMgr, false);
         }
+    } else {
+        LogWarn("DetectorConstruction") << "No Yoke logical volumes found!" << G4endl;
     }
     
     fieldBuilder->ConstructFieldSetup();

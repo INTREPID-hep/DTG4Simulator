@@ -11,6 +11,7 @@
 #include <sstream>
 
 #include "DTSimConstants.hh"
+#include "DTSimLogger.hh"
 
 namespace DTSim
 {
@@ -118,7 +119,7 @@ G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
     CellID cellID = DecodeCellID(volumeName, copyNo);
     // Check if decoding was successful
     if (!cellID.isValid()) {
-        G4cerr << "Warning: Failed to decode cell ID for volume " << volumeName 
+        LogWarn("DriftCellSD") << "Failed to decode cell ID for volume " << volumeName 
                << " copy " << copyNo << G4endl;
         return false;
     }
@@ -177,6 +178,8 @@ G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
     // Add hit to collection
     fHitsCollection->insert(hit);
 
+    LogDebug("DriftCellSD") << *hit << G4endl;
+
     return true;
 }
 
@@ -213,8 +216,8 @@ G4bool DriftCellSD::ApplyWireCut(G4Step* step)
         // Dump all energy into this step (signal generation)
         step->AddTotalEnergyDeposit(track->GetKineticEnergy());
         track->SetKineticEnergy(0.0);
-        // G4cout << "Wire Cut Applied: Particle killed at radius " 
-        //        << G4BestUnit(r, "Length") << G4endl;
+        LogDebug("DriftCellSD") << "Wire Cut Applied: Particle killed at radius " 
+               << G4BestUnit(r, "Length") << G4endl;
         return true; // CAUGHT
     }
     return false; // NOT CAUGHT
@@ -244,8 +247,8 @@ G4bool DriftCellSD::ApplyElectrostaticConfinement(G4Step* step)
         step->AddTotalEnergyDeposit(kineticEnergy);
 
         track->SetKineticEnergy(0.0);
-        // G4cout << "Electrostatic Confinement Applied: Particle killed with KE " 
-        //        << G4BestUnit(kineticEnergy, "Energy") << G4endl;
+        LogDebug("DriftCellSD") << "Electrostatic Confinement Applied: Particle killed with KE " 
+               << G4BestUnit(kineticEnergy, "Energy") << G4endl;
         return true; // Killed
     }
 
@@ -272,15 +275,15 @@ G4bool DriftCellSD::EmulateWallCrossing(G4Step* step)
     if (currentKE > fWallEnergyLoss) {
         // It punches through the wall, but loses energy
         track->SetKineticEnergy(currentKE - fWallEnergyLoss);
-        // G4cout << "Wall Crossing: Particle KE reduced by " 
-        //        << G4BestUnit(fWallEnergyLoss, "Energy") << G4endl;
+        LogDebug("DriftCellSD") << "Wall Crossing Applied: Particle KE reduced by " 
+               << G4BestUnit(fWallEnergyLoss, "Energy") << G4endl;
     } else {
         // It gets stuck in the wall
         track->SetTrackStatus(fStopAndKill);
         track->SetKineticEnergy(0.0); 
         // The energy is lost in the wall, NOT deposited in the gas.
         // So we do NOT add it to step->AddTotalEnergyDeposit().
-        // G4cout << "Wall Crossing: Particle killed (insufficient KE to cross)" << G4endl;
+        LogDebug("DriftCellSD") << "Wall Crossing Applied: Particle killed (insufficient KE to cross)" << G4endl;
         return true; // Killed
     }
 
@@ -316,14 +319,14 @@ CellID DriftCellSD::DecodeCellID(const G4String& volumeName, G4int copyNo) const
     // Check if basic parsing succeeded
     if (cellID.wheel == -999 || cellID.sector == -999 || 
         cellID.station == -999 || cellID.superLayer == -999) {
-        G4cerr << "Warning: Could not parse basic cell ID from " << volumeName << G4endl;
+        LogWarn("DriftCellSD") << "Could not parse basic cell ID from " << volumeName << G4endl;
         return cellID;
     }
     
     // Extract cells-per-layer encoding from volume name
     size_t lastUnderscore = volumeName.rfind('_');
     if (lastUnderscore == std::string::npos) {
-        G4cerr << "Warning: Could not find encoding in " << volumeName << G4endl;
+        LogWarn("DriftCellSD") << "Could not find encoding in " << volumeName << G4endl;
         return cellID;
     }
     
@@ -340,7 +343,7 @@ CellID DriftCellSD::DecodeCellID(const G4String& volumeName, G4int copyNo) const
     }
     
     if (cellsPerLayer.empty()) {
-        G4cerr << "Warning: Empty layer structure from encoding " << encoding << G4endl;
+        LogWarn("DriftCellSD") << "Empty layer structure from encoding " << encoding << G4endl;
         return cellID;
     }
     
@@ -357,7 +360,7 @@ CellID DriftCellSD::DecodeCellID(const G4String& volumeName, G4int copyNo) const
         }
     }
     
-    G4cerr << "Warning: CopyNo " << copyNo << " out of range for " << volumeName << G4endl;
+    LogWarn("DriftCellSD") << "CopyNo " << copyNo << " out of range for " << volumeName << G4endl;
     return cellID;
 }
 
@@ -367,7 +370,7 @@ void DriftCellSD::EndOfEvent(G4HCofThisEvent* hce)
     // Optional: print summary or debug information
     G4int nHits = fHitsCollection->entries();
     if (nHits > 0) {
-        G4cout << "DriftCellSD: " << nHits << " hits produced" << G4endl;
+        LogDebug("DriftCellSD") << "DriftCellSD: " << nHits << " hits produced" << G4endl;
     }
 }
 

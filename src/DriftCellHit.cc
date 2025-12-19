@@ -60,7 +60,7 @@ void DriftCellHit::Draw()
 
 void DriftCellHit::Print()
 {
-    G4cout << "DriftCellHit: Event " << fEventID
+    G4cout << "DriftCellHit: "
            << " PDG=" << fPDG
            << " ProcessType=" << fProcessType
            << " q=" << fCharge
@@ -70,6 +70,23 @@ void DriftCellHit::Print()
            << " GlobalPos=" << fGlobalPos/cm << " cm"
            << " TimeDrift=" << G4BestUnit(fTimeDrift, "Time")
            << G4endl;
+}
+
+void DriftCellHit::Print(std::ostream& os) const {
+    os << "DriftCellHit: "
+       << " PDG=" << fPDG
+       << " ProcessType=" << fProcessType
+       << " q=" << fCharge
+       << " Edep=" << G4BestUnit(fEnergyDeposit, "Energy")
+       << " CellID=" << fCellID
+       << " LocalPos=" << fLocalPos/cm << " cm"
+       << " GlobalPos=" << fGlobalPos/cm << " cm"
+       << " TimeDrift=" << G4BestUnit(fTimeDrift, "Time");
+}
+
+std::ostream& operator<<(std::ostream& os, const DriftCellHit& hit) {
+    hit.Print(os);
+    return os;
 }
 
 }

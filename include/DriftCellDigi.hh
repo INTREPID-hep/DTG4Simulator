@@ -26,6 +26,7 @@ class DriftCellDigi : public G4VDigi
 
     void Draw() override;
     void Print() override;
+    void Print(std::ostream& os) const;
 
     // Setters
     void SetEventID(G4int id) { fEventID = id; }
@@ -54,6 +55,9 @@ typedef G4TDigiCollection<DriftCellDigi> DriftCellDigiCollection;
 
 // Memory allocation
 extern G4ThreadLocal G4Allocator<DriftCellDigi>* DriftCellDigiAllocator;
+
+// Global streaming operator
+std::ostream& operator<<(std::ostream& os, const DriftCellDigi& digi);
 
 inline void* DriftCellDigi::operator new(size_t)
 {

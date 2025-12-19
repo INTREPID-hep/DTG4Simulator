@@ -56,4 +56,17 @@ void DTSegment::Print()
            << G4endl;
 }
 
+void DTSegment::Print(std::ostream& os) const {
+    os << "DTSegment: " << fStationID
+       << " LocalPos=" << fLocalPos/cm << " cm"
+       << " LocalDir=" << fLocalDir
+       << " GlobalPos=" << fGlobalPos/cm << " cm"
+       << " GlobalDir=" << fGlobalDir;
+}
+
+std::ostream& operator<<(std::ostream& os, const DTSegment& seg) {
+    seg.Print(os);
+    return os;
+}
+
 }

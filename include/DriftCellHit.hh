@@ -28,6 +28,7 @@ class DriftCellHit : public G4VHit
       // methods from base class
       void Draw() override;
       void Print() override;
+      void Print(std::ostream& os) const;
 
       // Setters
       void SetEventID(G4int id)           { fEventID = id; }
@@ -86,6 +87,9 @@ typedef G4THitsCollection<DriftCellHit> DriftCellHitsCollection;
 
 // Memory allocation
 extern G4ThreadLocal G4Allocator<DriftCellHit>* DriftCellHitAllocator;
+
+// Global streaming operator
+std::ostream& operator<<(std::ostream& os, const DriftCellHit& hit);
 
 inline void* DriftCellHit::operator new(size_t)
 {

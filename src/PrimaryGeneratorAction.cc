@@ -7,6 +7,7 @@
 #include "G4GenericMessenger.hh"
 #include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
+#include "DTSimLogger.hh"
 
 namespace DTSim
 {
@@ -43,6 +44,7 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* event)
   G4ParticleDefinition* particle;
   if (fRandomizePrimary) { 
     // if randomizing, select a particle type at random
+    LogDebug("PrimaryGeneratorAction") << "Randomizing primary particle type" << G4endl;
     auto i = (int)(5. * G4UniformRand());
     switch(i) {
       case 0:
@@ -90,6 +92,11 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* event)
   fParticleGun->SetParticlePosition(G4ThreeVector(x, y, z));
 
   fParticleGun->GeneratePrimaryVertex(event);
+   // Log selected particle and kinematics
+  LogDebug("PrimaryGeneratorAction") << "Generating primary: "
+      << particle->GetParticleName() << ", momentum = " << fMomentum/GeV << " GeV, "
+      << "theta = " << theta/deg << " deg, phi = " << phi/deg << " deg, position = ("
+      << x << ", " << y << ", " << z << ") m" << G4endl;
 }
 
 void PrimaryGeneratorAction::DefineCommands()

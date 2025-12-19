@@ -2,16 +2,21 @@
 # Include this in your macros with: /control/execute macros/settings/verbosity.mac
 
 # Control verbosity
-/control/verbose 2
+/control/verbose 1
 
 # Run manager verbosity
-/run/verbose 2
-
+/run/verbose 0
+# use with care, very verbose
 # Event verbosity (0=quiet, 1=summary, 2=detailed)
 /event/verbose 0
-
 # Tracking verbosity (use with care, very verbose)
 /tracking/verbose 0
+# Physics process verbosity
+/process/verbose 0
 
-# Physics process verbosity (use with care, very verbose)
-# /process/verbose 0
+# DTSim specific logging levels (0=Error, 1=Warn, 2=Info, 3=Debug)
+/DTSim/log/level 2
+
+# DTSim module-specific log level
+#/DTSim/log/moduleLevel StationSD 3
+#/DTSim/log/moduleLevel DriftCellSD 2

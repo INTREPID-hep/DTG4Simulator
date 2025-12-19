@@ -1,3 +1,4 @@
+#include "DTSimLogger.hh"
 #include "DriftCellDigitizer.hh"
 
 #include "G4DigiManager.hh"
@@ -67,7 +68,7 @@ void DriftCellDigitizer::Digitize()
   // Get current event
   const G4Event* currentEvent = G4RunManager::GetRunManager()->GetCurrentEvent();
   if (!currentEvent) {
-    G4cerr << "DriftCellDigitizer: No current event" << G4endl;
+    LogError("DriftCellDigitizer") << "No current event" << G4endl;
     StoreDigiCollection(fDigiCollection);
     return;
   }
@@ -80,7 +81,7 @@ void DriftCellDigitizer::Digitize()
   if (fHCID < 0) {
     // This is expected when DriftCell SD is disabled - not an error
     if (currentEvent->GetEventID() == 0) {
-      G4cout << "DriftCellDigitizer: DriftCellHitsCollection not found (SD may be disabled)" << G4endl;
+      LogDebug("DriftCellDigitizer") << "DriftCellHitsCollection not found (SD may be disabled)" << G4endl;
     }
     StoreDigiCollection(fDigiCollection);
     return;
@@ -102,6 +103,7 @@ void DriftCellDigitizer::Digitize()
   }
   // -------------------- Digitization --------------------
   G4int nHits = hitsCollection->entries();
+  LogDebug("DriftCellDigitizer") << "Processing " << nHits << " hits for digitization" << G4endl;
   
   // Map to group hits by CellID
   // Using unordered_map (hash map) for O(1) access
@@ -115,6 +117,7 @@ void DriftCellDigitizer::Digitize()
 
   // 2. Process each cell
   for (auto& entry : cellHitsMap) {
+    LogDebug("DriftCellDigitizer") << "Digitizing cell: " << entry.first << ", hits: " << entry.second.size() << G4endl;
     std::vector<DriftCellHit*>& hits = entry.second;
 
     // Sort hits by time
@@ -157,7 +160,7 @@ void DriftCellDigitizer::Digitize()
   StoreDigiCollection(fDigiCollection);
   
   if (fDigiCollection->entries() > 0) {
-    G4cout << "DriftCellDigitizer: Created " << fDigiCollection->entries() 
+    LogDebug("DriftCellDigitizer") << "Created " << fDigiCollection->entries() 
            << " digis" << G4endl;
   }
 }

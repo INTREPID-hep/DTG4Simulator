@@ -29,6 +29,7 @@ class DTSegment : public G4VHit
       // methods from base class
       void Draw() override;
       void Print() override;
+       void Print(std::ostream& os) const;
 
       // Setters
       void SetStationID(const StationID& id)      { fStationID = id; }
@@ -66,6 +67,9 @@ typedef G4THitsCollection<DTSegment> DTSegmentCollection;
 
 // Memory allocation
 extern G4ThreadLocal G4Allocator<DTSegment>* DTSegmentAllocator;
+
+// Global streaming operator
+std::ostream& operator<<(std::ostream& os, const DTSegment& seg);
 
 inline void* DTSegment::operator new(size_t)
 {

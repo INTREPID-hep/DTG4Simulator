@@ -5,6 +5,7 @@
 #include "G4GenericMessenger.hh"
 
 #include "DTSimConstants.hh"
+#include "DTSimLogger.hh"
 
 namespace DTSim
 {
@@ -97,7 +98,7 @@ void RunAction::BeginOfRunAction(const G4Run* run)
     auto analysisManager = G4AnalysisManager::Instance();
     
     G4int runID = run->GetRunID();
-    G4cout << "### Run " << runID << " start." << G4endl;
+    LogInfo("RunAction") << "Run " << runID << " start." << G4endl;
     
     
     // Open file first
@@ -108,6 +109,7 @@ void RunAction::BeginOfRunAction(const G4Run* run)
     }
     
     analysisManager->OpenFile(fileName + ".root");
+    LogDebug("RunAction") << "Output file: " << fileName << ".root" << G4endl;
 }
 
 void RunAction::EndOfRunAction(const G4Run* run)
@@ -117,7 +119,7 @@ void RunAction::EndOfRunAction(const G4Run* run)
     analysisManager->CloseFile();
 
     G4int runID = run->GetRunID();
-    G4cout << "### Run " << runID << " end." << G4endl;
+    LogInfo("RunAction") << "Run " << runID << " end." << G4endl;
 }
 
 }

@@ -29,6 +29,7 @@
 
 #include "DetectorConstruction.hh"
 #include "ActionInitialization.hh"
+#include "DTSimLogger.hh"
 
 #include "G4RunManagerFactory.hh"
 #include "G4SteppingVerbose.hh"
@@ -45,6 +46,10 @@ int main(int argc, char** argv)
   // Determine batch mode and macro file from command line
   G4String macroFileName;
   G4bool batchMode = false;
+
+  // Set global log level to ERROR
+  auto* logger = DTSim::Logger::Instance();
+  logger->SetGlobalLevel(0);
 
   if (argc > 1) {
     // First argument is macro file

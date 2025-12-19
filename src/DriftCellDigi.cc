@@ -60,11 +60,23 @@ void DriftCellDigi::Draw()
 
 void DriftCellDigi::Print()
 {
-  G4cout << "DriftCellDigi - Event: " << fEventID
+  G4cout << "DriftCellDigi: "
          << " CellID: " << fCellID 
          << " TDC: " << fTDC
          << " GlobalPos: " << fGlobalPos/cm << " cm"
          << G4endl;
+}
+
+void DriftCellDigi::Print(std::ostream& os) const {
+  os << "DriftCellDigi: "
+     << " CellID: " << fCellID
+     << " TDC: " << fTDC
+     << " GlobalPos: " << fGlobalPos/cm << " cm";
+}
+
+std::ostream& operator<<(std::ostream& os, const DriftCellDigi& digi) {
+  digi.Print(os);
+  return os;
 }
 
 }
