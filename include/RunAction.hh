@@ -21,69 +21,80 @@ class RunAction : public G4UserRunAction
     void BeginOfRunAction(const G4Run*) override;
     void EndOfRunAction(const G4Run*) override;
 
+    bool IsExtendedActive() const { return fExtendedOutput; }
+
   private:
     G4GenericMessenger* fMessenger;
     G4String fOutputFileName;
+    G4bool fExtendedOutput;
+    G4bool fNtupleAlreadyCreated;
     
   public:
+    void DefineCommands();
+    void CreateNtupleAndTree();
     // Vector storage for hit data (bound to ntuple columns)
-    std::vector<G4int> fHit_PDG;
-    std::vector<G4int> fHit_Charge;
-    std::vector<G4int> fHit_Wheel;
-    std::vector<G4int> fHit_Sector;
-    std::vector<G4int> fHit_Station;
-    std::vector<G4int> fHit_SuperLayer;
-    std::vector<G4int> fHit_Layer;
-    std::vector<G4int> fHit_Wire;
-    std::vector<G4double> fHit_XLocal;
-    std::vector<G4double> fHit_YLocal;
-    std::vector<G4double> fHit_ZLocal;
-    std::vector<G4double> fHit_Time;
-    std::vector<G4double> fHit_Edep;
-    std::vector<G4int> fHit_ProcessType;
-    std::vector<G4int> fHit_TrackID;
-    std::vector<G4int> fHit_ParentID;
-    std::vector<G4double> fHit_TrackLength;
-    std::vector<G4double> fHit_VertexKineticEnergy;
-    std::vector<G4double> fHit_VertexPosX;
-    std::vector<G4double> fHit_VertexPosY;
-    std::vector<G4double> fHit_VertexPosZ;
+    G4int fNSimHits_column;
+    mutable std::vector<G4int> fHit_PDG;
+    mutable std::vector<G4int> fHit_Charge;
+    mutable std::vector<G4int> fHit_Wheel;
+    mutable std::vector<G4int> fHit_Sector;
+    mutable std::vector<G4int> fHit_Station;
+    mutable std::vector<G4int> fHit_SuperLayer;
+    mutable std::vector<G4int> fHit_Layer;
+    mutable std::vector<G4int> fHit_Wire;
+    mutable std::vector<G4double> fHit_XLocal;
+    mutable std::vector<G4double> fHit_YLocal;
+    mutable std::vector<G4double> fHit_ZLocal;
+    mutable std::vector<G4double> fHit_Time;
+    mutable std::vector<G4double> fHit_Edep;
+    mutable std::vector<G4int> fHit_ProcessType;
+    mutable std::vector<G4int> fHit_TrackID;
+    mutable std::vector<G4int> fHit_ParentID;
+    mutable std::vector<G4double> fHit_TrackLength;
+    mutable std::vector<G4double> fHit_VertexKineticEnergy;
+    mutable std::vector<G4double> fHit_VertexPosX;
+    mutable std::vector<G4double> fHit_VertexPosY;
+    mutable std::vector<G4double> fHit_VertexPosZ;
     
     // Vector storage for digi data (bound to ntuple columns)
-    std::vector<G4int> fDigi_Wheel;
-    std::vector<G4int> fDigi_Sector;
-    std::vector<G4int> fDigi_Station;
-    std::vector<G4int> fDigi_SuperLayer;
-    std::vector<G4int> fDigi_Layer;
-    std::vector<G4int> fDigi_Wire;
-    std::vector<G4int> fDigi_TDC;
-    std::vector<G4int> fDigi_TrackID;
+    G4int fNDigis_column;
+    mutable std::vector<G4int> fDigi_Wheel;
+    mutable std::vector<G4int> fDigi_Sector;
+    mutable std::vector<G4int> fDigi_Station;
+    mutable std::vector<G4int> fDigi_SuperLayer;
+    mutable std::vector<G4int> fDigi_Layer;
+    mutable std::vector<G4int> fDigi_Wire;
+    mutable std::vector<G4int> fDigi_TDC;
+    mutable std::vector<G4int> fDigi_parentPDG;
+    mutable std::vector<G4int> fDigi_TrackID;
     
     // Vector storage for generator-level data (bound to ntuple columns)
-    std::vector<G4int> fGen_PDG;
-    std::vector<G4int> fGen_Charge;
-    std::vector<G4double> fGen_Pt;
-    std::vector<G4double> fGen_Eta;
-    std::vector<G4double> fGen_Phi;
-    std::vector<G4double> fGen_RadEnergy;
-    std::vector<G4int> fGen_nSecondaries;
+    G4int fNGen_column;
+    mutable std::vector<G4int> fGen_PDG;
+    mutable std::vector<G4int> fGen_Charge;
+    mutable std::vector<G4double> fGen_Pt;
+    mutable std::vector<G4double> fGen_Eta;
+    mutable std::vector<G4double> fGen_Phi;
+    mutable std::vector<G4double> fGen_RadEnergy;
+    mutable std::vector<G4int> fGen_nSecondaries;
     
     // Vector storage for segment data (bound to ntuple columns)
-    std::vector<G4int> fSeg_Wheel;
-    std::vector<G4int> fSeg_Sector;
-    std::vector<G4int> fSeg_Station;
-    std::vector<G4double> fSeg_LocalPosX;
-    std::vector<G4double> fSeg_LocalPosY;
-    std::vector<G4double> fSeg_LocalPosZ;
-    std::vector<G4double> fSeg_LocalDirX;
-    std::vector<G4double> fSeg_LocalDirY;
-    std::vector<G4double> fSeg_LocalDirZ;
-    std::vector<G4double> fSeg_GlobalPosX;
-    std::vector<G4double> fSeg_GlobalPosY;
-    std::vector<G4double> fSeg_GlobalPosZ;
-    std::vector<G4double> fSeg_GlobalDirX;
-    std::vector<G4double> fSeg_GlobalDirY;
-    std::vector<G4double> fSeg_GlobalDirZ;
+    G4int fNSegments_column;
+    mutable std::vector<G4int> fSeg_Wheel;
+    mutable std::vector<G4int> fSeg_Sector;
+    mutable std::vector<G4int> fSeg_Station;
+    mutable std::vector<G4double> fSeg_LocalPosX;
+    mutable std::vector<G4double> fSeg_LocalPosY;
+    mutable std::vector<G4double> fSeg_LocalPosZ;
+    mutable std::vector<G4double> fSeg_LocalDirX;
+    mutable std::vector<G4double> fSeg_LocalDirY;
+    mutable std::vector<G4double> fSeg_LocalDirZ;
+    mutable std::vector<G4double> fSeg_GlobalPosX;
+    mutable std::vector<G4double> fSeg_GlobalPosY;
+    mutable std::vector<G4double> fSeg_GlobalPosZ;
+    mutable std::vector<G4double> fSeg_GlobalDirX;
+    mutable std::vector<G4double> fSeg_GlobalDirY;
+    mutable std::vector<G4double> fSeg_GlobalDirZ;
 };
 
 }

@@ -7,17 +7,19 @@ namespace DTSim
 {
 
 class EventAction;
+class RunAction;
 
 class SteppingAction : public G4UserSteppingAction
 {
   public:
-    SteppingAction(EventAction* eventAction);
-    ~SteppingAction() override = default;
+    SteppingAction();
+    ~SteppingAction() = default;
 
     void UserSteppingAction(const G4Step*) override;
 
   private:
-    EventAction* fEventAction;
+    const EventAction* fEventAction;
+    const RunAction* fRunAction;
 };
 
 }

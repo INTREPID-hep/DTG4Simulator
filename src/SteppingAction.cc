@@ -1,5 +1,8 @@
 #include "SteppingAction.hh"
 #include "EventAction.hh"
+#include "DTSimLogger.hh"
+#include "RunAction.hh"
+
 #include "G4Step.hh"
 #include "G4Track.hh"
 #include "G4RunManager.hh"
@@ -7,13 +10,22 @@
 namespace DTSim
 {
 
-SteppingAction::SteppingAction(EventAction* eventAction)
- : G4UserSteppingAction(),
-   fEventAction(eventAction)
-{}
+SteppingAction::SteppingAction()
+ : G4UserSteppingAction()
+{
+    auto* runManager = G4RunManager::GetRunManager();
+    fEventAction = static_cast<const EventAction*>(runManager->GetUserEventAction());
+    fRunAction = static_cast<const RunAction*>(runManager->GetUserRunAction());
+}
 
 void SteppingAction::UserSteppingAction(const G4Step* step)
 {
+    if (!(fEventAction && fRunAction)){
+        LogError("SteppingAction") << "EventAction or RunAction not found" << G4endl;
+        return;
+    }
+    if (!fRunAction->IsExtendedActive()) return;
+
     G4Track* track = step->GetTrack();
     
     // We only care about primary particles (ParentID = 0)

@@ -6,6 +6,7 @@
 #include "G4SDManager.hh"
 #include "G4DigiManager.hh"
 #include "G4SystemOfUnits.hh"
+#include "G4RunManager.hh"
 
 #include "RunAction.hh"
 #include "DriftCellHit.hh"
@@ -17,9 +18,11 @@
 namespace DTSim
 {
 
-EventAction::EventAction(RunAction* runAction)
- : G4UserEventAction(), fRunAction(runAction)
+EventAction::EventAction()
+ : G4UserEventAction()
 {
+    auto* runManager = G4RunManager::GetRunManager();
+    fRunAction = static_cast<const RunAction*>(runManager->GetUserRunAction());
 }
 
 void EventAction::BeginOfEventAction(const G4Event* event)
@@ -69,15 +72,6 @@ void EventAction::clearVectors()
     fRunAction->fHit_YLocal.clear();
     fRunAction->fHit_ZLocal.clear();
     fRunAction->fHit_Time.clear();
-    fRunAction->fHit_Edep.clear();
-    fRunAction->fHit_ProcessType.clear();
-    fRunAction->fHit_TrackID.clear();
-    fRunAction->fHit_ParentID.clear();
-    fRunAction->fHit_TrackLength.clear();
-    fRunAction->fHit_VertexKineticEnergy.clear();
-    fRunAction->fHit_VertexPosX.clear();
-    fRunAction->fHit_VertexPosY.clear();
-    fRunAction->fHit_VertexPosZ.clear();
     
     // Clear digi vectors
     fRunAction->fDigi_Wheel.clear();
@@ -87,7 +81,7 @@ void EventAction::clearVectors()
     fRunAction->fDigi_Layer.clear();
     fRunAction->fDigi_Wire.clear();
     fRunAction->fDigi_TDC.clear();
-    fRunAction->fDigi_TrackID.clear();
+    fRunAction->fDigi_parentPDG.clear();
     
     // Clear gen vectors
     fRunAction->fGen_PDG.clear();
@@ -95,8 +89,6 @@ void EventAction::clearVectors()
     fRunAction->fGen_Pt.clear();
     fRunAction->fGen_Eta.clear();
     fRunAction->fGen_Phi.clear();
-    fRunAction->fGen_RadEnergy.clear();
-    fRunAction->fGen_nSecondaries.clear();
     
     // Clear segment vectors
     fRunAction->fSeg_Wheel.clear();
@@ -111,10 +103,28 @@ void EventAction::clearVectors()
     fRunAction->fSeg_GlobalPosX.clear();
     fRunAction->fSeg_GlobalDirY.clear();
     fRunAction->fSeg_GlobalDirZ.clear();
+    
+    if (fRunAction->IsExtendedActive()) {
+        // Clear extended hit info
+        fRunAction->fHit_Edep.clear();
+        fRunAction->fHit_ProcessType.clear();
+        fRunAction->fHit_TrackID.clear();
+        fRunAction->fHit_ParentID.clear();
+        fRunAction->fHit_TrackLength.clear();
+        fRunAction->fHit_VertexKineticEnergy.clear();
+        fRunAction->fHit_VertexPosX.clear();
+        fRunAction->fHit_VertexPosY.clear();
+        fRunAction->fHit_VertexPosZ.clear();
 
-    // Reset maps
-    fRadiatedEnergyMap.clear();
-    fSecondaryCountMap.clear();
+        fRunAction->fDigi_TrackID.clear();
+
+        fRunAction->fGen_RadEnergy.clear();
+        fRunAction->fGen_nSecondaries.clear();
+
+        // Reset maps
+        fRadiatedEnergyMap.clear();
+        fSecondaryCountMap.clear();
+    }
 }
 
 void EventAction::fillHitBranches(const G4Event* event, G4AnalysisManager* analysisManager)
@@ -122,7 +132,7 @@ void EventAction::fillHitBranches(const G4Event* event, G4AnalysisManager* analy
     // Get hits collection from the event
     G4HCofThisEvent* hce = event->GetHCofThisEvent();
     if (!hce) {
-        analysisManager->FillNtupleIColumn(0, 1, 0);
+        analysisManager->FillNtupleIColumn(0, fRunAction->fNSimHits_column, 0);
         LogWarn("EventAction") << "No hits collection found in event " 
             << event->GetEventID() << G4endl;
         return;
@@ -136,7 +146,7 @@ void EventAction::fillHitBranches(const G4Event* event, G4AnalysisManager* analy
         if (event->GetEventID() == 0) {
             LogWarn("EventAction") << "DriftCellHitsCollection not found (DriftCell SD may be disabled)" << G4endl;
         }
-        analysisManager->FillNtupleIColumn(0, 1, 0);
+        analysisManager->FillNtupleIColumn(0, fRunAction->fNSimHits_column, 0);
         return;
     }
 
@@ -145,7 +155,7 @@ void EventAction::fillHitBranches(const G4Event* event, G4AnalysisManager* analy
         static_cast<DriftCellHitsCollection*>(hce->GetHC(hcID));
     
     if (!hitsCollection) {
-        analysisManager->FillNtupleIColumn(0, 1, 0);
+        analysisManager->FillNtupleIColumn(0, fRunAction->fNSimHits_column, 0);
         LogWarn("EventAction") << "No DriftCell hits collection found in event " 
             << event->GetEventID() << G4endl;
         return;
@@ -157,7 +167,7 @@ void EventAction::fillHitBranches(const G4Event* event, G4AnalysisManager* analy
         << event->GetEventID() << G4endl;
     
     // Fill number of hits
-    analysisManager->FillNtupleIColumn(0, 1, nHits);
+    analysisManager->FillNtupleIColumn(0, fRunAction->fNSimHits_column, nHits);
 
     // Loop over all hits and fill RunAction's vectors
     for (G4int i = 0; i < nHits; i++) {
@@ -178,16 +188,19 @@ void EventAction::fillHitBranches(const G4Event* event, G4AnalysisManager* analy
         fRunAction->fHit_YLocal.push_back(localPos.y()/mm);
         fRunAction->fHit_ZLocal.push_back(localPos.z()/mm);
         fRunAction->fHit_Time.push_back(hit->GetTimeDrift()/ns);
-        fRunAction->fHit_Edep.push_back(hit->GetEnergyDeposit()/keV);
-        fRunAction->fHit_ProcessType.push_back(hit->GetProcessType());
-        fRunAction->fHit_TrackID.push_back(hit->GetTrackID());
-        fRunAction->fHit_ParentID.push_back(hit->GetParentID());
-        fRunAction->fHit_TrackLength.push_back(hit->GetTrackLength()/mm);
-        fRunAction->fHit_VertexKineticEnergy.push_back(hit->GetVertexKineticEnergy()/keV);
-        fRunAction->fHit_VertexPosX.push_back(hit->GetVertexPos().x()/mm);
-        fRunAction->fHit_VertexPosY.push_back(hit->GetVertexPos().y()/mm);
-        fRunAction->fHit_VertexPosZ.push_back(hit->GetVertexPos().z()/mm);
-    }    
+        if (fRunAction->IsExtendedActive()) {
+            // Fill extended info
+            fRunAction->fHit_Edep.push_back(hit->GetEnergyDeposit()/keV);
+            fRunAction->fHit_ProcessType.push_back(hit->GetProcessType());
+            fRunAction->fHit_TrackID.push_back(hit->GetTrackID());
+            fRunAction->fHit_ParentID.push_back(hit->GetParentID());
+            fRunAction->fHit_TrackLength.push_back(hit->GetTrackLength()/mm);
+            fRunAction->fHit_VertexKineticEnergy.push_back(hit->GetVertexKineticEnergy()/keV);
+            fRunAction->fHit_VertexPosX.push_back(hit->GetVertexPos().x()/mm);
+            fRunAction->fHit_VertexPosY.push_back(hit->GetVertexPos().y()/mm);
+            fRunAction->fHit_VertexPosZ.push_back(hit->GetVertexPos().z()/mm);
+        }
+    }
 }
 
 void EventAction::fillDigiBranches(const G4Event* event, G4AnalysisManager* analysisManager)
@@ -198,7 +211,7 @@ void EventAction::fillDigiBranches(const G4Event* event, G4AnalysisManager* anal
         // No digis - fill zero
         LogWarn("EventAction") << "No digi collection found in event " 
             << event->GetEventID() << G4endl;
-        analysisManager->FillNtupleIColumn(0, 23, 0);
+        analysisManager->FillNtupleIColumn(0, fRunAction->fNDigis_column, 0);
         return;
     }
     
@@ -208,14 +221,14 @@ void EventAction::fillDigiBranches(const G4Event* event, G4AnalysisManager* anal
         if (event->GetEventID() == 0) {
             LogWarn("EventAction") << "DriftCellDigiCollection not found (digitizer may not have run)" << G4endl;
         }
-        analysisManager->FillNtupleIColumn(0, 23, 0);
+        analysisManager->FillNtupleIColumn(0, fRunAction->fNDigis_column, 0);
         return;
     }
     
     DriftCellDigiCollection* digiCollection = 
         static_cast<DriftCellDigiCollection*>(dce->GetDC(dcID));
     if (!digiCollection) {
-        analysisManager->FillNtupleIColumn(0, 23, 0);
+        analysisManager->FillNtupleIColumn(0, fRunAction->fNDigis_column, 0);
         LogWarn("EventAction") << "No DriftCell digi collection found in event " 
             << event->GetEventID() << G4endl;
         return;
@@ -227,7 +240,7 @@ void EventAction::fillDigiBranches(const G4Event* event, G4AnalysisManager* anal
         << event->GetEventID() << G4endl;
 
     // Fill scalar column for nDigis
-    analysisManager->FillNtupleIColumn(0, 23, nDigis);
+    analysisManager->FillNtupleIColumn(0, fRunAction->fNDigis_column, nDigis);
     
     // Loop over all digis and fill RunAction's vectors
     for (G4int i = 0; i < nDigis; i++) {
@@ -242,7 +255,10 @@ void EventAction::fillDigiBranches(const G4Event* event, G4AnalysisManager* anal
         fRunAction->fDigi_Layer.push_back(cellID.layer);
         fRunAction->fDigi_Wire.push_back(cellID.wire);
         fRunAction->fDigi_TDC.push_back(digi->GetTDC());
-        fRunAction->fDigi_TrackID.push_back(digi->GetTrackID());
+        fRunAction->fDigi_parentPDG.push_back(digi->GetParentPDG());
+        if (fRunAction->IsExtendedActive()) {
+            fRunAction->fDigi_TrackID.push_back(digi->GetTrackID());
+        }
     }
 }
 
@@ -276,21 +292,22 @@ void EventAction::fillGenBranches(const G4Event* event, G4AnalysisManager* analy
             fRunAction->fGen_PDG.push_back(primary->GetPDGcode());
             fRunAction->fGen_Charge.push_back(primary->GetCharge());
             fRunAction->fGen_Pt.push_back(pt/GeV);
-            fRunAction->fGen_Eta.push_back(eta);
-            fRunAction->fGen_Phi.push_back(phi);
+            fRunAction->fGen_Eta.push_back(eta/rad);
+            fRunAction->fGen_Phi.push_back(phi/rad);
             
-            // Fill radiation info for this primary
-            G4int trackID = primary->GetTrackID();
-            fRunAction->fGen_RadEnergy.push_back(fRadiatedEnergyMap[trackID]/keV);
-            fRunAction->fGen_nSecondaries.push_back(fSecondaryCountMap[trackID]);
-            
+            if (fRunAction->IsExtendedActive()) {                
+                // Fill radiation info for this primary
+                G4int trackID = primary->GetTrackID();
+                fRunAction->fGen_RadEnergy.push_back(fRadiatedEnergyMap[trackID]/keV);
+                fRunAction->fGen_nSecondaries.push_back(fSecondaryCountMap[trackID]);
+            }
             // Move to next primary in this vertex
             primary = primary->GetNext();
         }
     }
     
     // Fill scalar column for number of primaries
-    analysisManager->FillNtupleIColumn(0, 32, nPrimaries);
+    analysisManager->FillNtupleIColumn(0, fRunAction->fNGen_column, nPrimaries);
     
     LogInfo("EventAction") << nPrimaries << " primary particles generated in event " 
         << event->GetEventID() << G4endl;
@@ -305,7 +322,7 @@ void EventAction::fillSegmentBranches(const G4Event* event, G4AnalysisManager* a
         // No hits collection - fill zero segments
         LogWarn("EventAction") << "No hits collection found in event " 
             << event->GetEventID() << G4endl;
-        analysisManager->FillNtupleIColumn(0, 40, 0);
+        analysisManager->FillNtupleIColumn(0, fRunAction->fNSegments_column, 0);
         return;
     }
 
@@ -317,7 +334,7 @@ void EventAction::fillSegmentBranches(const G4Event* event, G4AnalysisManager* a
         if (event->GetEventID() == 0) {
             LogWarn("EventAction") << "DTSegmentCollection not found (Station SD may be disabled)" << G4endl;
         }
-        analysisManager->FillNtupleIColumn(0, 40, 0);
+        analysisManager->FillNtupleIColumn(0, fRunAction->fNSegments_column, 0);
         return;
     }
 
@@ -326,7 +343,7 @@ void EventAction::fillSegmentBranches(const G4Event* event, G4AnalysisManager* a
         static_cast<DTSegmentCollection*>(hce->GetHC(hcID));
     
     if (!segmentCollection) {
-        analysisManager->FillNtupleIColumn(0, 40, 0);
+        analysisManager->FillNtupleIColumn(0, fRunAction->fNSegments_column, 0);
         LogWarn("EventAction") << "No DTSegment collection found in event " 
             << event->GetEventID() << G4endl;
         return;
@@ -338,7 +355,7 @@ void EventAction::fillSegmentBranches(const G4Event* event, G4AnalysisManager* a
         << event->GetEventID() << G4endl;
     
     // Fill scalar column for number of segments
-    analysisManager->FillNtupleIColumn(0, 40, nSegments);
+    analysisManager->FillNtupleIColumn(0, fRunAction->fNSegments_column, nSegments);
 
     // Loop over all segments and fill RunAction's vectors
     for (G4int i = 0; i < nSegments; i++) {

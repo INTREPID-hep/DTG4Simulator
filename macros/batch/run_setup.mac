@@ -8,7 +8,7 @@
 # Load standard settings
 /random/setSeeds {sed1} {sed2}
 /run/numberOfThreads {nThreads}
-/control/execute macros/settings/verbosity_quiet.mac
+/control/execute macros/settings/verbosity.mac
 
 # Load preInit macros
 /control/execute macros/settings/detector.mac

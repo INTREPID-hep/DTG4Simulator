@@ -1,5 +1,8 @@
 #include "DTSimLogger.hh"
 #include "DriftCellDigitizer.hh"
+#include "DriftCellHit.hh"
+#include "DTSimConstants.hh"
+#include "RunAction.hh"
 
 #include "G4DigiManager.hh"
 #include "G4RunManager.hh"
@@ -8,9 +11,6 @@
 #include "G4SystemOfUnits.hh"
 #include "G4GenericMessenger.hh"
 #include "Randomize.hh"
-
-#include "DriftCellHit.hh"
-#include "DTSimConstants.hh"
 
 #include <unordered_map>
 #include <vector>
@@ -32,6 +32,8 @@ DriftCellDigitizer::DriftCellDigitizer(G4String name)
 {
   collectionName.push_back("DriftCellDigiCollection");
   DefineCommands();
+  auto* runManager = G4RunManager::GetRunManager();
+  fRunAction = static_cast<const RunAction*>(runManager->GetUserRunAction());
 }
 
 DriftCellDigitizer::~DriftCellDigitizer()
@@ -146,11 +148,11 @@ void DriftCellDigitizer::Digitize()
     
     // Create digi
     DriftCellDigi* digi = new DriftCellDigi();
-    digi->SetEventID(hit->GetEventID());
     digi->SetCellID(hit->GetCellID());
     digi->SetTDC(tdc);
     digi->SetGlobalPos(hit->GetCellCenterPos());  // Use cell center for visualization
-    digi->SetTrackID(hit->GetTrackID()); // Link to the particle that caused the hit
+    digi->SetParentPDG(hit->GetPDG()); // Parent particle PDG
+    if (fRunAction->IsExtendedActive()) digi->SetTrackID(hit->GetTrackID()); // Link to the track that caused the hit
     
     // Add digi to collection
     fDigiCollection->insert(digi);

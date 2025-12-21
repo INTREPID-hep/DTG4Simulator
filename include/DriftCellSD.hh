@@ -14,6 +14,8 @@ class G4GenericMessenger;
 namespace DTSim
 {
 
+class RunAction;
+
 class DriftCellSD : public G4VSensitiveDetector
 {
   public:
@@ -33,6 +35,8 @@ class DriftCellSD : public G4VSensitiveDetector
       G4bool ApplyElectrostaticConfinement(G4Step* step);
       G4bool EmulateWallCrossing(G4Step* step);
       G4bool ApplyWireCut(G4Step* step);
+
+      const RunAction* fRunAction;
 
       DriftCellHitsCollection* fHitsCollection = nullptr;
       G4GenericMessenger* fMessenger;

@@ -100,8 +100,8 @@ venv/
 logs/
 exec_macs/
 test/
-job_list.txt
-run_wrapper.sh
+job_list*.txt
+run_wrapper*.sh
 submit.sub
 
 # geometry files

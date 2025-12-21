@@ -11,6 +11,8 @@
 namespace DTSim
 {
 
+class RunAction;
+
 class DriftCellHit : public G4VHit
 {
   public:
@@ -31,7 +33,6 @@ class DriftCellHit : public G4VHit
       void Print(std::ostream& os) const;
 
       // Setters
-      void SetEventID(G4int id)           { fEventID = id; }
       void SetPDG(G4int pdg)              { fPDG = pdg; }
       void SetCharge(G4int q)             { fCharge = q; }
       void SetProcessType(G4int type)     { fProcessType = type; }
@@ -48,7 +49,6 @@ class DriftCellHit : public G4VHit
       void SetVertexPos(G4ThreeVector pos) { fVertexPos = pos; }
 
       // Getters
-      G4int GetEventID() const            { return fEventID; }
       G4int GetPDG() const                { return fPDG; }
       G4int GetCharge() const             { return fCharge; }
       G4int GetProcessType() const        { return fProcessType; }
@@ -65,7 +65,7 @@ class DriftCellHit : public G4VHit
       G4ThreeVector GetVertexPos() const  { return fVertexPos; }
 
   private:
-      G4int fEventID;
+      const RunAction* fRunAction;
       G4int fPDG;
       G4int fCharge;
       G4int fProcessType;

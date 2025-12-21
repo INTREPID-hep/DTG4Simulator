@@ -12,6 +12,8 @@ class G4GenericMessenger;
 namespace DTSim
 {
 
+class RunAction;
+
 class DriftCellDigitizer : public G4VDigitizerModule
 {
   public:
@@ -23,6 +25,7 @@ class DriftCellDigitizer : public G4VDigitizerModule
   private:
     void DefineCommands();
     
+    const RunAction* fRunAction;
     DriftCellDigiCollection* fDigiCollection = nullptr;
     G4int fHCID = -1;
     G4GenericMessenger* fMessenger;

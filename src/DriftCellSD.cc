@@ -1,5 +1,8 @@
 #include "DriftCellSD.hh"
 #include "DTSimUtils.hh"
+#include "DTSimConstants.hh"
+#include "DTSimLogger.hh"
+#include "RunAction.hh"
 
 #include "G4RunManager.hh"
 #include "G4HCofThisEvent.hh"
@@ -9,9 +12,6 @@
 #include "G4UnitsTable.hh"
 #include "G4GenericMessenger.hh"
 #include <sstream>
-
-#include "DTSimConstants.hh"
-#include "DTSimLogger.hh"
 
 namespace DTSim
 {
@@ -30,6 +30,9 @@ DriftCellSD::DriftCellSD(const G4String& name)
 {
     collectionName.insert("DriftCellHitsCollection");
     DefineCommands();
+
+    auto* runManager = G4RunManager::GetRunManager();
+    fRunAction = static_cast<const RunAction*>(runManager->GetUserRunAction());
 }
 
 DriftCellSD::~DriftCellSD()
@@ -145,22 +148,12 @@ G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
     // Get other particle properties
     auto charge = step->GetTrack()->GetDefinition()->GetPDGCharge();
     auto pdgID  = step->GetTrack()->GetDefinition()->GetPDGEncoding();
-    auto edep = step->GetTotalEnergyDeposit();
-    const G4VProcess* process = step->GetPostStepPoint()->GetProcessDefinedStep();
-    G4int processType = process ? process->GetProcessType() : -999;
-    // Get current event ID
-    G4int evt = G4RunManager::GetRunManager()->GetCurrentEvent()->GetEventID();
-    
-    // Get track info
-    G4Track* track = step->GetTrack();
-
+  
     // Create a new hit and fill it
     DriftCellHit* hit = new DriftCellHit();
 
-    hit->SetEventID(evt);
     hit->SetPDG(pdgID);
     hit->SetCharge(charge);
-    hit->SetProcessType(processType);
     hit->SetCellID(cellID);
     hit->SetLocalPos(cellStationPos);  // Position in Station frame
     hit->SetGlobalPos(worldPos);
@@ -168,12 +161,22 @@ G4bool DriftCellSD::ProcessHits(G4Step* step, G4TouchableHistory* history)
     G4ThreeVector cellCenter = touchable->GetHistory()->GetTopTransform().Inverse().TransformPoint(G4ThreeVector(0,0,0));
     hit->SetCellCenterPos(cellCenter);
     hit->SetTimeDrift(timeDrift);
-    hit->SetEnergyDeposit(edep);
-    hit->SetTrackID(track->GetTrackID());
-    hit->SetParentID(track->GetParentID());
-    hit->SetTrackLength(track->GetTrackLength());
-    hit->SetVertexKineticEnergy(track->GetVertexKineticEnergy());
-    hit->SetVertexPos(track->GetVertexPosition());
+
+    if (fRunAction->IsExtendedActive()) {
+        // Fill extended info
+        G4int processType = step->GetPostStepPoint()->GetProcessDefinedStep()->GetProcessType();
+        // Get track info
+        G4Track* track = step->GetTrack();
+        auto edep = step->GetTotalEnergyDeposit();
+        
+        hit->SetProcessType(processType);
+        hit->SetEnergyDeposit(edep);
+        hit->SetTrackID(track->GetTrackID());
+        hit->SetParentID(track->GetParentID());
+        hit->SetTrackLength(track->GetTrackLength());
+        hit->SetVertexKineticEnergy(track->GetVertexKineticEnergy());
+        hit->SetVertexPos(track->GetVertexPosition());
+    }
 
     // Add hit to collection
     fHitsCollection->insert(hit);

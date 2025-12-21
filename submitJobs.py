@@ -20,6 +20,9 @@ EXECUTABLE = "run_wrapper.sh"   # The bash script that runs the job
 #number of threads per job
 N_THREADS = 1
 
+# Enable extended output in the simulation
+EXTENDED_OUTPUT = True
+
 mu_general_settings = [
     "/DTSim/generator/momentum 1000 GeV",
     "/DTSim/generator/sigmaMomentum 990 GeV", 
@@ -197,6 +200,9 @@ def generate_macros_and_joblist():
 
 # 2. Execute Setup
 /control/execute macros/batch/run_setup.mac
+
+# 3. output extended flag
+/DTSim/run/extendedOutput {"true" if EXTENDED_OUTPUT else "false"}
 
 # 3. Custom Commands
 """

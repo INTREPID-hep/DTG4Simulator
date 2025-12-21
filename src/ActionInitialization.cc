@@ -25,10 +25,10 @@ void ActionInitialization::Build() const
   DTSim::RunAction* runAction = new DTSim::RunAction();
   SetUserAction(runAction);
   
-  DTSim::EventAction* eventAction = new DTSim::EventAction(runAction);
+  DTSim::EventAction* eventAction = new DTSim::EventAction();
   SetUserAction(eventAction);
   
-  DTSim::SteppingAction* steppingAction = new DTSim::SteppingAction(eventAction);
+  DTSim::SteppingAction* steppingAction = new DTSim::SteppingAction();
   SetUserAction(steppingAction);
   
   // Register digitizer module
