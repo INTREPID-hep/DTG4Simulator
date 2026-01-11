@@ -9,23 +9,23 @@ import time
 # =============================================================================
 
 # Output directories
-LOG_DIR = "logs"                # Where HTCondor logs will go
-MACRO_DIR = "exec_macs"       # Where generated macro files will go
-OUTPUT_FOLDER = "test"          # Result ROOT files (e.g., /eos/cms/store/...)
+LOG_DIR = "logs_20Gev"                # Where HTCondor logs will go
+MACRO_DIR = "exec_macs_20Gev"       # Where generated macro files will go
+OUTPUT_FOLDER = "20Gev"          # Result ROOT files (e.g., /eos/cms/store/...)
 
 # HTCondor Settings
 QUEUE = "workday"               # espresso, microcentury, longlunch, workday, tomorrow, testmatch, nextweek
-EXECUTABLE = "run_wrapper.sh"   # The bash script that runs the job
+EXECUTABLE = "run_wrapper_20Gev.sh"   # The bash script that runs the job
 
 #number of threads per job
-N_THREADS = 1
+N_THREADS = 4
 
 # Enable extended output in the simulation
 EXTENDED_OUTPUT = True
 
 mu_general_settings = [
-    "/DTSim/generator/momentum 1000 GeV",
-    "/DTSim/generator/sigmaMomentum 990 GeV", 
+    "/DTSim/generator/momentum 20 GeV",
+    "/DTSim/generator/sigmaMomentum 20 GeV", 
     "/DTSim/generator/theta 90 deg",
     "/DTSim/generator/phi 0 deg",
     "/DTSim/generator/sigmaTheta 30 deg",
@@ -35,34 +35,34 @@ mu_general_settings = [
 # Datasets to process
 DATASETS = {
     'Muons_wallCrossing_Confinement_wireCut': {
-        'events_per_job': 2000,
-        'n_jobs': 5,
+        'events_per_job': 1000,
+        'n_jobs': 10,
         'commands': mu_general_settings
     },
-    'Muons_wallCrossing_Confinement': {
-        'events_per_job': 2000,
-        'n_jobs': 5,
-        'commands': mu_general_settings + [
-            "/DTSim/cellSD/enableWireCut false"
-        ]
-    },
-    'Muons_wallCrossing': {
-        'events_per_job': 2000,
-        'n_jobs': 5,
-        'commands': mu_general_settings + [
-            "/DTSim/cellSD/enableWireCut false",
-            "/DTSim/cellSD/enableElectrostaticConfinement false"
-        ]
-    },
-    'Muons_noFilter': {
-        'events_per_job': 2000,
-        'n_jobs': 5,
-        'commands': mu_general_settings + [
-            "/DTSim/cellSD/enableWireCut false",
-            "/DTSim/cellSD/enableElectrostaticConfinement false",
-            "/DTSim/cellSD/enableWallCrossing false"
-        ]
-    },
+    # 'Muons_wallCrossing_Confinement': {
+    #     'events_per_job': 2000,
+    #     'n_jobs': 5,
+    #     'commands': mu_general_settings + [
+    #         "/DTSim/cellSD/enableWireCut false"
+    #     ]
+    # },
+    # 'Muons_wallCrossing': {
+    #     'events_per_job': 2000,
+    #     'n_jobs': 5,
+    #     'commands': mu_general_settings + [
+    #         "/DTSim/cellSD/enableWireCut false",
+    #         "/DTSim/cellSD/enableElectrostaticConfinement false"
+    #     ]
+    # },
+    # 'Muons_noFilter': {
+    #     'events_per_job': 2000,
+    #     'n_jobs': 5,
+    #     'commands': mu_general_settings + [
+    #         "/DTSim/cellSD/enableWireCut false",
+    #         "/DTSim/cellSD/enableElectrostaticConfinement false",
+    #         "/DTSim/cellSD/enableWallCrossing false"
+    #     ]
+    # },
     # Example of another dataset
     # 'Pions': {
     #     'events_per_job': 500,
@@ -170,7 +170,7 @@ queue macro_file, dataset_name from {job_list_file}
 
 def generate_macros_and_joblist():
     """Generates individual macro files and the list of jobs."""
-    job_list_file = "job_list.txt"
+    job_list_file = f"job_list_{OUTPUT_FOLDER}.txt"
     jobs = [] # List of tuples (macro_path, dataset_name)
 
     print("Generating macros...")
@@ -230,6 +230,25 @@ def generate_macros_and_joblist():
 # =============================================================================
 # MAIN
 # =============================================================================
+def run_macros_locally():
+    """Run all macros in exec_macs folder locally using run_wrapper.sh one by one."""
+    macro_dir = MACRO_DIR
+    wrapper = EXECUTABLE
+    if not os.path.exists(wrapper):
+        print(f"Error: {wrapper} not found! Please ensure it exists and is executable.")
+        return
+    macro_files = sorted([f for f in os.listdir(macro_dir) if f.endswith('.mac')])
+    if not macro_files:
+        print(f"No .mac files found in {macro_dir}")
+        return
+    for macro in macro_files:
+        macro_path = os.path.join(macro_dir, macro)
+        print(f"\n=== Running {macro_path} ===")
+        ret = os.system(f"bash {wrapper} {macro_path}")
+        if ret != 0:
+            print(f"Error running {macro_path}, exit code {ret}")
+        else:
+            print(f"Finished {macro_path}")
 
 if __name__ == "__main__":
     create_directories()
@@ -237,8 +256,12 @@ if __name__ == "__main__":
     job_list = generate_macros_and_joblist()
     create_submit_file(job_list)
     
-    ###### sends bjobs ######
-    print("\nSubmitting jobs...")
-    os.system("condor_submit submit.sub")
-    print( "your jobs:\n")
-    os.system("condor_q")
+    if "--local" in sys.argv:
+        run_macros_locally()
+        sys.exit(0)
+    else:
+        ##### sends bjobs ######
+        print("\nSubmitting jobs...")
+        os.system("condor_submit submit.sub")
+        print( "your jobs:\n")
+        os.system("condor_q")
