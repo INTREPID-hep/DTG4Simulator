@@ -68,7 +68,7 @@ class PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
     G4double fPhi = 0.0*deg;     // Azimuthal angle (rotation around Z)
     G4double fSigmaTheta = DTSim::kDefaultSigmaAngle;
     G4double fSigmaPhi = DTSim::kDefaultSigmaAngle;
-    G4bool fRandomizePrimary = true;
+    G4bool fRandomizePrimary = false;
     G4ThreeVector fPosition = DTSim::kDefaultParticlePosition;
     G4ThreeVector fSigmaPosition = G4ThreeVector(0., 0., 0.);
 };

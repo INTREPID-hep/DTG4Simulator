@@ -21,8 +21,10 @@ Todos los comandos del simulador están organizados bajo el prefijo `/DTSim/`:
 │   ├── setMinEnergy
 │   ├── setBarrierEnergy
 │   ├── setWallLoss
+│   ├── setWireCutRadius
 │   ├── enableElectrostaticConfinement
-│   └── enableWallCrossing
+│   ├── enableWallCrossing
+│   └── enableWireCut
 ├── digitizer/         # Parámetros de digitalización (después de /run/initialize)
 │   ├── setEfficiency
 │   ├── setTimeResolution
@@ -37,6 +39,23 @@ Todos los comandos del simulador están organizados bajo el prefijo `/DTSim/`:
     ├── sigmaPhi
     ├── position
     └── sigmaPosition
+```
+
+---
+
+## Control de Salida
+
+**IMPORTANTE**: Este comando debe ejecutarse **ANTES** de `/run/initialize`.
+
+### `/DTSim/run/extendedOutput <bool>`
+Activa/desactiva la salida extendida del NTuple con ramas adicionales.
+
+**Tipo**: Boolean  
+**Valor por defecto**: `true`  
+**Uso**: Cuando está activo, se incluyen ramas adicionales en el NTuple para análisis detallado (trackId, parentId, información del vértice, etc.). Ver [docs/analysis.md](analysis.md) para lista completa de ramas extendidas.  
+**Ejemplo**:
+```bash
+/DTSim/run/extendedOutput false    # Salida compacta
 ```
 
 ---
@@ -185,6 +204,28 @@ Activa/desactiva el modelo de pérdida de energía en paredes virtuales.
 /DTSim/cellSD/enableWallCrossing false    # Desactivar pérdida en paredes
 ```
 
+### `/DTSim/cellSD/setWireCutRadius <value> <unit>`
+Establece el radio de corte del wire (región de avalancha).
+
+**Tipo**: Double con unidades de longitud  
+**Valor por defecto**: `5.0 mm`  
+**Uso**: Partículas dentro de este radio del centro del wire son matadas y depositan toda su energía (simula región de avalancha donde no se resuelve la física individualmente).  
+**Ejemplo**:
+```bash
+/DTSim/cellSD/setWireCutRadius 3.0 mm    # Radio de corte más pequeño
+```
+
+### `/DTSim/cellSD/enableWireCut <bool>`
+Activa/desactiva el corte de wire (wire cut).
+
+**Tipo**: Boolean  
+**Valor por defecto**: `true`  
+**Uso**: Cuando está activo, las partículas que se acercan al wire más que `fWireCutRadius` son matadas y depositan toda su energía. Desactivar para permitir el tracking completo hasta el wire.  
+**Ejemplo**:
+```bash
+/DTSim/cellSD/enableWireCut false    # Desactivar wire cut
+```
+
 ---
 
 ## Parámetros de Digitalización
@@ -233,17 +274,23 @@ Documentado en detalle en [primary_generation.md](primary_generation.md).
 ### `/DTSim/generator/randomizePrimary <bool>`
 Activa/desactiva la randomización de partículas primarias.
 
-**Valor por defecto**: `false`
+**Tipo**: Boolean  
+**Valor por defecto**: `false`  
+**Uso**: Cuando está activo, selecciona aleatoriamente entre e⁺, μ⁺, π⁺, K⁺, y protón. Cuando está inactivo, usa la partícula especificada con `/gun/particle`.  
+**Ejemplo**:
+```bash
+/DTSim/generator/randomizePrimary true    # Selección aleatoria de partículas
+```
 
 ### `/DTSim/generator/momentum <value> <unit>`
 Establece el momento del particle gun.
 
-**Valor por defecto**: `1000.0 GeV`
+**Valor por defecto**: `1 GeV` (1000 MeV)
 
 ### `/DTSim/generator/sigmaMomentum <value> <unit>`
 Establece la dispersión gaussiana del momento.
 
-**Valor por defecto**: `50.0 GeV`
+**Valor por defecto**: `50 MeV`
 
 ### `/DTSim/generator/theta <value> <unit>`
 Establece el ángulo polar de la dirección del haz (coordenadas esféricas).

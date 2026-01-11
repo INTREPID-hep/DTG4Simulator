@@ -9,34 +9,33 @@ import time
 # =============================================================================
 
 # Output directories
-LOG_DIR = "logs_20Gev"                # Where HTCondor logs will go
-MACRO_DIR = "exec_macs_20Gev"       # Where generated macro files will go
-OUTPUT_FOLDER = "20Gev"          # Result ROOT files (e.g., /eos/cms/store/...)
-
+LOG_DIR = "logs"                # Where HTCondor logs will go
+MACRO_DIR = "exec_macs"       # Where generated macro files will go
+OUTPUT_FOLDER = "/eos/user/d/destrada/GEANT4-Samples"          # Result ROOT files (e.g., /eos/cms/store/...)
+CURRENT_FOLDER = os.getcwd()
 # HTCondor Settings
-QUEUE = "workday"               # espresso, microcentury, longlunch, workday, tomorrow, testmatch, nextweek
-EXECUTABLE = "run_wrapper_20Gev.sh"   # The bash script that runs the job
-
+QUEUE = "tomorrow"               # espresso, microcentury, longlunch, workday, tomorrow, testmatch, nextweek
+EXECUTABLE = "run_wrapper.sh"   # The bash script that runs the job
 #number of threads per job
-N_THREADS = 4
+N_THREADS = 1
 
 # Enable extended output in the simulation
 EXTENDED_OUTPUT = True
 
 mu_general_settings = [
-    "/DTSim/generator/momentum 20 GeV",
-    "/DTSim/generator/sigmaMomentum 20 GeV", 
+    "/DTSim/generator/momentum 1000 GeV",
+    "/DTSim/generator/sigmaMomentum 1999 GeV", 
     "/DTSim/generator/theta 90 deg",
     "/DTSim/generator/phi 0 deg",
-    "/DTSim/generator/sigmaTheta 30 deg",
-    "/DTSim/generator/sigmaPhi 45 deg",
+    "/DTSim/generator/sigmaTheta 120 deg",
+    "/DTSim/generator/sigmaPhi 90 deg",
 ]
 
 # Datasets to process
 DATASETS = {
-    'Muons_wallCrossing_Confinement_wireCut': {
+    'Muons_1GeVTo2TeV_Wh-1To1Sc12To2': {
         'events_per_job': 1000,
-        'n_jobs': 10,
+        'n_jobs': 500,
         'commands': mu_general_settings
     },
     # 'Muons_wallCrossing_Confinement': {
@@ -113,12 +112,16 @@ echo "Starting Job on $(hostname)"
 echo "Date: $(date)"
 echo "Macro: $MACRO_FILE"
 
+0. Move to the submission directory
+cd {CURRENT_FOLDER}
+
 # 1. Setup Environment
 # We assume the script is in the submission directory (shared filesystem)
 if [ -f "setup_lcg.sh" ]; then
     source setup_lcg.sh
 else
     echo "Error: setup_lcg.sh not found!"
+    echo $(pwd)
     exit 1
 fi
 
@@ -168,9 +171,9 @@ queue macro_file, dataset_name from {job_list_file}
         f.write(content)
     print("Created HTCondor submit file: submit.sub")
 
-def generate_macros_and_joblist():
+def generate_macros_and_joblist(one=False):
     """Generates individual macro files and the list of jobs."""
-    job_list_file = f"job_list_{OUTPUT_FOLDER}.txt"
+    job_list_file = f"job_list.txt"
     jobs = [] # List of tuples (macro_path, dataset_name)
 
     print("Generating macros...")
@@ -179,7 +182,7 @@ def generate_macros_and_joblist():
     random.seed(time.time())
 
     for name, info in DATASETS.items():
-        for i in range(info['n_jobs']):
+        for i in range(info['n_jobs'] if not one else 1):
             # Unique tag for this job
             tag = f"{name}_job{i}"
             macro_filename = f"{MACRO_DIR}/{tag}.mac"
@@ -253,7 +256,10 @@ def run_macros_locally():
 if __name__ == "__main__":
     create_directories()
     create_wrapper_script()
-    job_list = generate_macros_and_joblist()
+    if "--one" in sys.argv:
+        job_list = generate_macros_and_joblist(one=True)
+    else:
+        job_list = generate_macros_and_joblist()
     create_submit_file(job_list)
     
     if "--local" in sys.argv:

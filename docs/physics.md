@@ -15,7 +15,7 @@ runManager->SetUserInitialization(physicsList);
 
 FTFP_BERT incluye procesos hadrónicos (elásticos, inelásticos y captura) para protones, neutrones, piones, kaones, hiperones y antipartículas, combinando el modelo de Bertini (0-6 GeV) con el modelo de Fritiof (3-100 TeV). Los procesos electromagnéticos standard cubren ionización, bremsstrahlung, scattering múltiple, producción de pares y aniquilación para fotones, leptones cargados y hadrones/iones. También incluye decaimientos de partículas de vida larga.
 
-Adicionalmente, se registra `G4StepLimiterPhysics` para controlar el tamaño de paso del tracking (?).
+Adicionalmente, se registra `G4StepLimiterPhysics` para habilitar el proceso `G4StepLimiter`, que permite limitar el tamaño máximo de los steps.
 
 **No incluye**: Fotones ópticos, física de muy alta energía (>10 TeV), ni modelos de precisión para neutrones térmicos (disponibles en variantes como FTFP_BERT_HP).
 

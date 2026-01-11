@@ -6,7 +6,7 @@ El `PrimaryGeneratorAction` soporta 5 tipos de partículas: e⁺, μ⁺, π⁺, 
 
 ## Parámetros del Haz
 
-Valores por defecto: momento nominal 1000 GeV con dispersión de 50 GeV, ángulo polar θ = 90° (plano XY), ángulo azimutal φ = 0° (+X), divergencia angular de 2° en ambas direcciones, posición de origen en (0, 0, -2.5 m) sin dispersión espacial.
+Valores por defecto: momento nominal 1 GeV (1000 MeV) con dispersión de 50 MeV, ángulo polar θ = 90° (plano XY), ángulo azimutal φ = 0° (+X), divergencia angular de 2° en ambas direcciones, posición de origen en (0, 0, -2.5 m) sin dispersión espacial.
 ## Cinemática
 
 El momento se muestrea con distribución uniforme en [p - σ_p/2, p + σ_p/2]. La energía cinética se calcula usando la relación relativista E² = p² + m², donde m es la masa de la partícula.
@@ -29,7 +29,7 @@ La posición inicial de las partículas se puede configurar mediante un vector 3
 
 ## Modo Aleatorio
 
-Cuando `fRandomizePrimary = true` (default), el generador selecciona aleatoriamente entre las 5 partículas disponibles con probabilidad uniforme (20% cada una). Si es `false`, usa la partícula especificada con `/gun/particle`.
+Cuando `fRandomizePrimary = true`, el generador selecciona aleatoriamente entre las 5 partículas disponibles con probabilidad uniforme (20% cada una). Por defecto está en `false`, usando la partícula especificada con `/gun/particle` (μ⁺ por defecto).
 
 ## Comandos UI
 

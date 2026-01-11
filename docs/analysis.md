@@ -4,6 +4,18 @@
 
 El proyecto usa `G4AnalysisManager` para salida en formato ROOT. El NTuple se almacena en el directorio `DTG4SimNTuple` y soporta merge automático de threads.
 
+## Salida Extendida (Extended Output)
+
+Algunas ramas del NTuple son **opcionales** y solo se crean cuando el modo de salida extendida está activo. Este modo se controla con el comando UI:
+
+```bash
+/DTSim/run/extendedOutput true    # Habilitar salida extendida (default)
+```
+
+**IMPORTANTE**: Este comando debe ejecutarse **ANTES** de `/run/initialize`.
+
+Las ramas marcadas con 🔸 en las tablas siguientes son **solo en modo extendido**.
+
 ## NTuple: DTG4Tree
 
 El árbol `DTG4Tree` almacena la información **por evento**. A diferencia de versiones anteriores, se utilizan `std::vector` para almacenar múltiples hits, digis y partículas generadas dentro de una sola entrada (fila) del TTree.
@@ -27,6 +39,8 @@ Prefijo: `gen_`
 | `gen_pt` | Vector\<Double> | Momento transversal ($p_T$) [GeV] |
 | `gen_eta` | Vector\<Double> | Pseudorapidez ($\eta$) |
 | `gen_phi` | Vector\<Double> | Ángulo azimutal ($\phi$) [rad] |
+| `gen_radEnergy` 🔸 | Vector\<Double> | Energía radiada por la partícula primaria [MeV] |
+| `gen_nSecondaries` 🔸 | Vector\<Int> | Número de partículas secundarias producidas por el primario |
 
 #### 3. SimHits (Geant4 Hits)
 Prefijo: `simHit_`
@@ -45,8 +59,15 @@ Prefijo: `simHit_`
 | `simHit_ylocal` | Vector\<Double> | Posición Y local (a lo largo del wire) [mm] |
 | `simHit_zlocal` | Vector\<Double> | Posición Z local [mm] |
 | `simHit_time` | Vector\<Double> | Tiempo global + drift [ns] |
-| `simHit_edep` | Vector\<Double> | Energía depositada [MeV] |
-| `simHit_process_type` | Vector\<Int> | Tipo de proceso físico (Geant4 code) |
+| `simHit_edep` 🔸 | Vector\<Double> | Energía depositada [MeV] |
+| `simHit_process_type` 🔸 | Vector\<Int> | Tipo de proceso físico (ver [G4ProcessType](https://geant4.kek.jp/lxr/source/processes/management/include/G4ProcessType.hh)) |
+| `simHit_trackId` 🔸 | Vector\<Int> | ID único del track en Geant4 |
+| `simHit_parentId` 🔸 | Vector\<Int> | ID del track padre (0 = primario) |
+| `simHit_trackLength` 🔸 | Vector\<Double> | Longitud recorrida por el track [mm] |
+| `simHit_vertexKineticEnergy` 🔸 | Vector\<Double> | Energía cinética en el vértice de producción [MeV] |
+| `simHit_vertexPosX` 🔸 | Vector\<Double> | Posición X del vértice [mm] |
+| `simHit_vertexPosY` 🔸 | Vector\<Double> | Posición Y del vértice [mm] |
+| `simHit_vertexPosZ` 🔸 | Vector\<Double> | Posición Z del vértice [mm] |
 
 #### 4. Digis (Digitalización)
 Prefijo: `digi_`
@@ -60,6 +81,8 @@ Prefijo: `digi_`
 | `digi_layer` | Vector\<Int> | ID de Layer |
 | `digi_cell` | Vector\<Int> | Número de Wire |
 | `digi_TDC` | Vector\<Int> | Valor TDC (Time-to-Digital Converter) |
+| `digi_parentPDG` | Vector\<Int> | Código PDG de la partícula que generó el hit original |
+| `digi_trackId` 🔸 | Vector\<Int> | ID del track que generó el hit original |
 
 #### 5. Muon Segments (Segmentos de Muones)
 Prefijo: `seg_`

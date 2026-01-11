@@ -4,16 +4,16 @@ Simulación Geant4 de cámaras Drift Tubes (DT) del CMS para estudios de pattern
 
 ## Requisitos
 
-- **Geant4** 11.2+ con Qt/OpenGL
-- **CMake** 3.16+
-- **Python** 3.9+ con **mplDTs**: `pip install git+https://github.com/DanielEstrada971102/mplDTs.git@v2.2.0-beta`
-- **ROOT** 6.x
+- **Geant4** 11.3+ con Qt/OpenGL
+- **CMake** 3.25+
+- **Python** 3.12+ con **mplDTs**: `pip install git+https://github.com/DanielEstrada971102/mplDTs.git@v2.2.0-beta`
+- **ROOT** 6.32+
 
 ## Instalación y Uso
 
 ```bash
 # Clonar y compilar
-git clone https://github.com/INTREPID-hep/DTG4Simulator.git
+git clone https://github.com/INTREPID-hep/DTG4Simulator.git -b destrada
 cd DTG4Simulator
 mkdir build && cd build
 cmake .. && make -j$(nproc)
@@ -22,6 +22,7 @@ cmake .. && make -j$(nproc)
 ./exampleDTSim                           # Modo interactivo con visualización
 ./exampleDTSim macros/batch/run.mac      # Modo batch con macro específico
 ```
+
 
 ## Salida de Datos
 
@@ -37,7 +38,7 @@ Para la lista completa de variables, ver [docs/analysis.md](docs/analysis.md).
 
 ## Configuración Runtime
 
-Todos los parámetros del detector, física y digitalización son configurables mediante macros sin recompilar:
+La mayoria de los parámetros del detector, física y digitalización son configurables mediante macros sin recompilar:
 
 ### Detector y Geometría (ANTES de /run/initialize)
 ```bash
@@ -79,6 +80,9 @@ Ver archivos en `macros/settings/` para ejemplos completos. Consultar **[docs/co
 - **[Análisis](docs/analysis.md)**: Estructura del NTuple
 ## Modificar Geometría
 
+> **:bulb: TIP:**  
+> Antes de ejecutar la simulación, asegúrate de haber generado correctamente los archivos de geometría (`.tg`) usando el script `generate_geometry_data.py`. Si los archivos no existen o están desactualizados, la simulación no será la esperada.
+
 ```bash
 cd geometry/
 # Editar estaciones en generate_geometry_data.py
@@ -97,13 +101,32 @@ El script `submitJobs.py` automatiza la generación de macros y el envío de tra
     *   `logs/`: Directorio para logs de salida y error (organizados por dataset).
     *   `run_wrapper.sh`: Script wrapper para ejecutar en los nodos.
     *   `submit.sub`: Archivo de envío de HTCondor.
-4.  **Enviar**: Ejecutar `condor_submit submit.sub`.
+
+    Y finalmente ejecutará `condor_submit submit.sub` automáticamente.
 
 ```bash
 ./compileDTsim.sh        # Compilar primero
-python3 submitJobs.py    # Generar configuración
-condor_submit submit.sub # Enviar al cluster
+python3 submitJobs.py    # Generar configuración y enviar a HTCondor
 ```
+
+### Opciones de Testing y Ejecución Local
+
+Antes de enviar todos los jobs a HTCondor, es recomendable probar la configuración:
+
+```bash
+# Generar y ejecutar solo 1 job por dataset (modo test)
+python3 submitJobs.py --one
+
+# Ejecutar todos los macros generados de forma secuencial localmente
+python3 submitJobs.py --local
+
+# Combinar ambas opciones: testear 1 job localmente
+python3 submitJobs.py --one --local
+```
+
+**Opciones disponibles:**
+- `--one`: Genera solo 1 job por dataset (útil para verificar configuración antes de lanzar producción completa)
+- `--local`: Ejecuta los macros secuencialmente en la máquina local en lugar de enviar a HTCondor
 
 ## Estructura del Proyecto
 

@@ -27,8 +27,10 @@ Los parámetros físicos del detector se pueden ajustar mediante comandos UI (DE
 /DTSim/cellSD/setMinEnergy 26.6 eV             # Umbral de ionización
 /DTSim/cellSD/setBarrierEnergy 2.1 keV         # Confinamiento electrostático
 /DTSim/cellSD/setWallLoss 1.0 keV              # Pérdida en paredes
+/DTSim/cellSD/setWireCutRadius 5.0 mm          # Radio de corte del wire
 
 # Control de modelos físicos
+/DTSim/cellSD/enableWireCut true
 /DTSim/cellSD/enableElectrostaticConfinement true
 /DTSim/cellSD/enableWallCrossing true
 ```
@@ -38,20 +40,24 @@ Los parámetros físicos del detector se pueden ajustar mediante comandos UI (DE
 - Energía mínima: 26.6 eV (umbral de ionización)
 - Energía de barrera: 2.1 keV (potencial del ánodo)
 - Pérdida en paredes: 1.0 keV (paredes de aluminio)
+- Radio de corte del wire: 5.0 mm (región de avalancha)
+- Wire cut: Habilitado
 - Confinamiento electrostático: Habilitado
 - Pérdida en paredes: Habilitada
 
-**Nota**: Los modelos físicos (confinamiento y pérdida en paredes) pueden desactivarse independientemente para estudios de sensibilidad o simplificación del modelo.
+**Nota**: Los modelos físicos (wire cut, confinamiento y pérdida en paredes) pueden desactivarse independientemente para estudios de sensibilidad o simplificación del modelo.
 
 ### Flujo de Procesamiento
 
 El método `ProcessHits()` ejecuta para cada step en volúmenes sensibles:
 
-1. **Confinamiento Electrostático**: Simula el atrapamiento de electrones de baja energía (< `fCellBarrierEnergy`, configurable) por el potencial del ánodo. Si no tienen suficiente energía para escapar, se detienen y depositan su energía en la celda actual.
+1. **Wire Cut (Región de Avalancha)**: Mata partículas que se acercan al wire más que `fWireCutRadius` (5 mm por defecto) y deposita toda su energía. Esto simula la región de avalancha donde no se resuelve la física individualmente. Se puede desactivar con `/DTSim/cellSD/enableWireCut false`.
 
-2. **Paredes Virtuales**: Emula la pérdida de energía (`fWallEnergyLoss`, configurable) de partículas cargadas al cruzar los límites entre celdas, simulando las paredes de aluminio que no están en la geometría física.
+2. **Confinamiento Electrostático**: Simula el atrapamiento de electrones de baja energía (< `fCellBarrierEnergy`, configurable) por el potencial del ánodo. Si no tienen suficiente energía para escapar, se detienen y depositan su energía en la celda actual. Solo se aplica a secundarios (TrackID > 1) para no matar muones primarios.
 
-3. **Filtro inicial**: Solo procesa partículas cargadas con energía depositada mayor al umbral (`fMinEnergyDeposit`, configurable).
+3. **Paredes Virtuales**: Emula la pérdida de energía (`fWallEnergyLoss`, configurable) de electrones y positrones al cruzar los límites entre celdas, simulando las paredes de aluminio que no están en la geometría física.
+
+4. **Filtro inicial**: Solo procesa partículas cargadas con energía depositada mayor al umbral (`fMinEnergyDeposit`, configurable).
 
 4. **Decodificación geométrica**: 
    - Extrae nombre del volumen y copyNo del **PreStepPoint** (asegura obtener el volumen sensible correcto)
