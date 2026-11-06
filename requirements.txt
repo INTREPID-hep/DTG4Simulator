@@ -1,0 +1,5 @@
+# Python environment for the CMS DT geometry generator (T-005).
+# The revision below is the one validated by geometry/smoke_tg.py.
+# To develop against the checkout instead:
+#   PYTHONPATH=/home/destrada/mplDTs python geometry/generate_geometry_data.py
+mplDTs @ git+https://github.com/DanielEstrada971102/mplDTs.git@v2.2.0-beta
