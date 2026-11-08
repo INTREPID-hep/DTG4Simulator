@@ -48,7 +48,7 @@ file(
   PATTERN "*.py" EXCLUDE
   PATTERN "*.pyc" EXCLUDE
   PATTERN "*template*" EXCLUDE
-  PATTERN "*test*" EXCLUDE
+  # PATTERN "*test*" EXCLUDE
   PATTERN "__pycache__" EXCLUDE
 )
 

@@ -47,7 +47,7 @@ def format_rotation_matrix(rot, name):
 # =============================================================================
 # STATION COMPONENT GENERATORS
 # =============================================================================
-def create_station_volume(station, wheel, sector, station_num):
+def create_station_volume(station, wheel, sector, station_num, refFrame="CMS"):
     """
     Create the station volume definition.
     
@@ -69,18 +69,24 @@ def create_station_volume(station, wheel, sector, station_num):
     geometry += f":VOLU {station_name} {solid_name} G4_AIR\n"
     
     # Get station transformation and rotation
-    station_transform = station.transformer.get_transformation(from_frame="Station", to_frame="CMS")
-    station_rot = extract_rotation(station_transform)
-    station_center = station.global_center
-    
-    # Create rotation matrix
-    rot_name = f"RM_Station_{wheel}_{sector}_{station_num}"
-    geometry += format_rotation_matrix(station_rot, rot_name)
-    
+
+    # No rotation by default
+    station_center = station.local_center  # In Station frame, center is at origin
+    rot_name = "R0"
+
+    if refFrame != "Station":
+        station_transform = station.transformer.get_transformation(from_frame="Station", to_frame=refFrame)
+        station_rot = extract_rotation(station_transform)
+        station_center = station.transformer.transform(station_center, from_frame="Station", to_frame=refFrame)
+        
+        # Create rotation matrix
+        rot_name = f"RM_Station_{wheel}_{sector}_{station_num}"
+        geometry += format_rotation_matrix(station_rot, rot_name)
+
     # Place station in world
     geometry += (f":PLACE {station_name} 1 world {rot_name} "
-                 f"{station_center[0]:.6f}*cm {station_center[1]:.6f}*cm {station_center[2]:.6f}*cm\n\n")
-    
+                f"{station_center[0]:.6f}*cm {station_center[1]:.6f}*cm {station_center[2]:.6f}*cm\n\n")
+
     return geometry, station_name, station_bounds
 
 
@@ -368,7 +374,8 @@ def generate_station_geometry_ascii(
     concentrator_template,
     concentrator_output,
     include_yoke=False,
-    include_honeycomb=False
+    include_honeycomb=False,
+    refFrame="CMS"
 ):
     """
     Generate Geant4 ASCII text geometry for multiple DT stations.
@@ -411,7 +418,7 @@ def generate_station_geometry_ascii(
         
         # Create station volume and placement
         station_vol, station_name, station_bounds = create_station_volume(
-            station, wheel, sector, station_num
+            station, wheel, sector, station_num, refFrame
         )
         station_geometry += station_vol
         
@@ -491,14 +498,14 @@ def _create_concentrator_file(station_files, yoke_file, template_path, output_pa
 if __name__ == "__main__":
     # Define stations to include (wheel, sector, station)
     stations_to_generate = [
-        # (0, 1, 1),
+        (0, 1, 1),
         # (0, 1, 2),
         # (0, 1, 3),
         # (0, 1, 4),
-        (wheel, sector, station)
-        for wheel in range(-1, 2)  # wheels -1, 0, 1
-        for sector in [1, 2, 12]
-        for station in range(1, 5)  # MB1 to MB4
+        # (wheel, sector, station)
+        # for wheel in range(-1, 2)  # wheels -1, 0, 1
+        # for sector in [1, 2, 12]
+        # for station in range(1, 5)  # MB1 to MB4
     ]
     
     print("Generating DT geometry files...")
@@ -510,6 +517,7 @@ if __name__ == "__main__":
         output_dir='stations',
         concentrator_template='geometry_concentrator_template',
         concentrator_output='geometry_concentrator.tg',
-        include_yoke=True,       # Include iron yoke
-        include_honeycomb=True   # Include aluminum honeycomb between SL2 and SL1
+        include_yoke=False,       # Include iron yoke
+        include_honeycomb=False,   # Include aluminum honeycomb between SL2 and SL1
+        refFrame="Station" # reference frame to use, if not "CMS", many station is no recomended.
     )
