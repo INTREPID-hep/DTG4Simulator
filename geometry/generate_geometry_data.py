@@ -399,28 +399,29 @@ def _create_concentrator_file(station_files, yoke_file, template_path, output_pa
 
 
 if __name__ == "__main__":
-    # Define stations to include (wheel, sector, station)
+    # The development subset: three wheels, three sectors, four station types
+    # (36 chambers, 25896 cells, ~10 s). The whole detector is the same loops
+    # over every sector, 1...14.
     stations_to_generate = [
-        (0, 1, 1),
-        # (0, 1, 2),
-        # (0, 1, 3),
-        # (0, 1, 4),
-        # (wheel, sector, station)
-        # for wheel in range(-1, 2)  # wheels -1, 0, 1
-        # for sector in [1, 2, 12]
-        # for station in range(1, 5)  # MB1 to MB4
+        (wheel, sector, station)
+        for wheel in (-1, 0, 1)
+        for sector in (1, 2, 12)
+        for station in (1, 2, 3, 4)
     ]
-    
+
     print("Generating DT geometry files...")
     print(f"Stations to generate: {len(stations_to_generate)}")
-    
-    # Generate geometry
+
+    # The concentrator template asks for Yoke*, Honeycomb* and DriftCell*
+    # volumes and it places the chambers in CMS, so all three switches have to
+    # agree with it: without the yoke or the honeycomb Geant4 aborts at setup,
+    # and in the "Station" frame every chamber sits on the world origin.
     generate_station_geometry_ascii(
         stations_list=stations_to_generate,
         output_dir='stations',
         concentrator_template='geometry_concentrator_template',
         concentrator_output='geometry_concentrator.tg',
-        include_yoke=False,       # Include iron yoke
-        include_honeycomb=False,   # Include aluminum honeycomb between SL2 and SL1
-        ref_frame="Station"  # reference frame to use, if not "CMS", many station is no recomended.
+        include_yoke=True,
+        include_honeycomb=True,
+        ref_frame="CMS",
     )
