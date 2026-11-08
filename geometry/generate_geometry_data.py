@@ -1,13 +1,27 @@
 """
 CMS Drift Tube Geometry Generator for Geant4
 
-This module generates Geant4 ASCII text geometry files for CMS drift tube (DT) stations,
-including drift cells, honeycomb layers, and iron yoke structures.
+This module generates Geant4 ASCII text geometry files for CMS drift tube (DT)
+stations: drift cells and honeycomb layers, plus the iron yoke structures.
+
+A station file is the mplDTs node tree written by the .tg exporter; the yoke is
+built here because it needs boolean solids (UNION / SUBTRACTION).
 """
 
-from mpldts.geometry import Station
-import numpy as np
+from dataclasses import replace
 from pathlib import Path
+
+import numpy as np
+
+from mpldts.export import TgSink, export_volumes, iter_volume_placements
+from mpldts.geometry import Station
+from mpldts.geometry.model import build_station
+from mpldts.geometry.presets import cms
+from mpldts.geometry.sources.cms_xml import CMSXMLSource
+from mpldts.geometry.specs import Pose
+
+#: the CMS chambers: the XML is parsed once for the whole run
+SOURCE = CMSXMLSource()
 
 
 # =============================================================================
@@ -45,167 +59,72 @@ def format_rotation_matrix(rot, name):
 
 
 # =============================================================================
+# STATION GEOMETRY
+# =============================================================================
+
+def _volume_names(wheel, sector, station_num):
+    """
+    Names of a station .tg, as the simulator parses them back.
+
+    StationSD reads the chamber from "Station_W<w>_Sec<s>_St<n>", DriftCellSD
+    reads the super layer and the cells-per-layer encoding from
+    "DriftCell_W<w>_Sec<s>_St<n>_SL<n>_<encoding>" and maps the copy number of
+    that volume onto (layer, wire). The scheme lives here, not in mplDTs: the
+    exporter takes it as a hook (T-005, T-057).
+    """
+
+    def name_of(node):
+        if node.kind == "station":
+            return "Station_W%d_Sec%d_St%d" % (wheel, sector, station_num)
+        if node.kind == "attachment":
+            return "Honeycomb_W%d_Sec%d_St%d" % (wheel, sector, station_num)
+        if node.kind == "cell":
+            super_layer = node.parent.parent
+            encoding = "".join("%02d" % len(layer.children) for layer in super_layer.children)
+            return "DriftCell_W%d_Sec%d_St%d_%s_%s" % (
+                wheel, sector, station_num, super_layer.name, encoding
+            )
+        return None
+
+    return name_of
+
+
+def station_node(wheel, sector, station_num, ref_frame="CMS", include_honeycomb=False):
+    """
+    mplDTs node tree of one chamber, ready for the exporter.
+
+    Args:
+        wheel, sector, station_num: Station identifiers
+        ref_frame: "CMS" places the station in the detector, "Station" writes it
+            at the world origin with no rotation (single chamber files)
+        include_honeycomb: add the aluminium panel between SL2 and SL1
+
+    Returns:
+        The station Node
+    """
+    spec = SOURCE.station(wheel, sector, station_num)
+    if include_honeycomb:
+        spec = cms.with_attachments(spec, SOURCE.record(wheel, sector, station_num))
+    if ref_frame == "Station":
+        spec = replace(spec, pose=Pose.identity())
+    return build_station(spec)
+
+
+def export_station(wheel, sector, station_num, path, ref_frame="CMS", include_honeycomb=False):
+    """
+    Write one station .tg through the mplDTs exporter.
+
+    Returns:
+        Number of drift cells placed in the file
+    """
+    node = station_node(wheel, sector, station_num, ref_frame, include_honeycomb)
+    export_volumes(node, TgSink(str(path), name_of=_volume_names(wheel, sector, station_num)))
+    return sum(1 for p in iter_volume_placements(node) if p.node.kind == "cell")
+
+
+# =============================================================================
 # STATION COMPONENT GENERATORS
 # =============================================================================
-def create_station_volume(station, wheel, sector, station_num, refFrame="CMS"):
-    """
-    Create the station volume definition.
-    
-    Args:
-        station: Station object from mplDTs
-        wheel, sector, station_num: Station identifiers
-        
-    Returns:
-        String with station volume and placement definitions
-    """
-    geometry = ""
-    station_bounds = station.bounds
-    station_name = f"Station_W{wheel}_Sec{sector}_St{station_num}"
-    solid_name = f"Solid_{station_name}"
-    
-    # Define station solid and volume (BOX: half-widths in X, Y, Z)
-    geometry += f":SOLID {solid_name} BOX "
-    geometry += f"{station_bounds[0]/2:.6f}*cm {station_bounds[2]/2:.6f}*cm {station_bounds[1]/2:.6f}*cm\n"
-    geometry += f":VOLU {station_name} {solid_name} G4_AIR\n"
-    
-    # Get station transformation and rotation
-
-    # No rotation by default
-    station_center = station.local_center  # In Station frame, center is at origin
-    rot_name = "R0"
-
-    if refFrame != "Station":
-        station_transform = station.transformer.get_transformation(from_frame="Station", to_frame=refFrame)
-        station_rot = extract_rotation(station_transform)
-        station_center = station.transformer.transform(station_center, from_frame="Station", to_frame=refFrame)
-        
-        # Create rotation matrix
-        rot_name = f"RM_Station_{wheel}_{sector}_{station_num}"
-        geometry += format_rotation_matrix(station_rot, rot_name)
-
-    # Place station in world
-    geometry += (f":PLACE {station_name} 1 world {rot_name} "
-                f"{station_center[0]:.6f}*cm {station_center[1]:.6f}*cm {station_center[2]:.6f}*cm\n\n")
-
-    return geometry, station_name, station_bounds
-
-
-def create_superlayer_cells(station, wheel, sector, station_num, station_name):
-    """
-    Create drift cell volumes for all superlayers in the station.
-    
-    Defines ONE logical volume per superlayer and places multiple copies.
-    The volume name encodes the number of cells per layer for identification.
-    
-    Args:
-        station: Station object from mplDTs
-        wheel, sector, station_num: Station identifiers
-        station_name: Name of the station volume
-        
-    Returns:
-        Geometry string with cell volume definitions and placements
-    """
-    geometry = ""
-    
-    for sl in station.super_layers:
-        geometry += f"// SuperLayer {sl.number} - Drift Cell Volume\n"
-        
-        # Count cells per layer and encode in volume name
-        # Format: 2 digits per layer count, e.g., [60, 60, 59, 59] -> "60605959"
-        cells_per_layer = [len(layer.cells) for layer in sl.layers]
-        layer_encoding = "".join([f"{count:02d}" for count in cells_per_layer])
-        
-        # Define drift cell volume using first cell as reference
-        if not sl.layers or not sl.layers[0].cells:
-            continue
-            
-        first_cell = sl.layers[0].cells[0]
-        cell_volume_name = f"DriftCell_W{wheel}_Sec{sector}_St{station_num}_SL{sl.number}_{layer_encoding}"
-        cell_bounds = first_cell.bounds
-        
-        geometry += f":VOLU {cell_volume_name} BOX "
-        geometry += f"{cell_bounds[0]/2:.6f}*cm {cell_bounds[2]/2:.6f}*cm {cell_bounds[1]/2:.6f}*cm GasMixture\n\n"
-        
-        # SL2 needs its own rotation matrix (rotated 90° around Z)
-        if sl.number == 2:
-            sl_transform = sl.transformer.get_transformation(from_frame="SuperLayer", to_frame="Station")
-            sl_rot = extract_rotation(sl_transform)
-            rotation_to_use = f"RM_SL2_W{wheel}_Sec{sector}_St{station_num}"
-            geometry += format_rotation_matrix(sl_rot, rotation_to_use)
-        else:
-            # SL1 and SL3 use identity rotation
-            rotation_to_use = "R0"
-            sl_transform = None
-        
-        # Place multiple copies of the cell volume
-        geometry += f"// Placing {sum(cells_per_layer)} cells ({' '.join([str(c) for c in cells_per_layer])} per layer)\n"
-        copy_number = 1
-        
-        for layer in sl.layers:
-            for cell in layer.cells:
-                # Get cell position relative to station
-                cell_center = cell.local_center
-                if sl.number == 2 and sl_transform is not None:
-                    cell_center = np.dot(sl_transform[:3, :3], cell.local_center)
-                
-                # Place copy of the cell volume in station
-                geometry += f":PLACE {cell_volume_name} {copy_number} {station_name} {rotation_to_use} "
-                geometry += f"{cell_center[0]:.6f}*cm {cell_center[1]:.6f}*cm {cell_center[2]:.6f}*cm\n"
-                copy_number += 1
-        geometry += "\n"
-    
-    return geometry
-
-
-def create_honeycomb(station, wheel, sector, station_num, station_name, station_bounds):
-    """
-    Create aluminum honeycomb layer between SL2 and SL1 (or SL3 for MB4).
-
-    Args:
-        station: Station object from mplDTs
-        wheel, sector, station_num: Station identifiers
-        station_name: Name of the station volume
-        station_bounds: Station dimensions [width, height, length]
-        
-    Returns:
-        Geometry string with honeycomb volume and placement
-    """
-    geometry = ""
-    honeycomb_name = f"Honeycomb_W{wheel}_Sec{sector}_St{station_num}"
-    
-    # Get superlayer objects to calculate actual gap
-    sl1 = [sl for sl in station.super_layers if sl.number == 1]
-    sl2 = [sl for sl in station.super_layers if sl.number == 2]
-    
-    # MB4 stations don't have SL2, use SL3 instead
-    if not sl2:
-        sl2 = [sl for sl in station.super_layers if sl.number == 3]
-    
-    if not sl1 or not sl2:
-        return ""
-    
-    sl1, sl2 = sl1[0], sl2[0]
-    
-    # Calculate honeycomb thickness from actual gap
-    # Z coordinate is the height/stacking direction in local station frame
-    sl1_z_min = sl1.local_cords_at_min[2]  # Bottom of SL1
-    sl2_z_max = sl2.local_cords_at_min[2] + sl2.bounds[1]  # Top of SL2
-    honeycomb_thickness = sl1_z_min - sl2_z_max  # Gap between them (~12.8 cm)
-    
-    # Honeycomb volume
-    geometry += f"// Aluminum Honeycomb (between SL2 and SL1)\n"
-    geometry += f":VOLU {honeycomb_name} BOX "
-    geometry += f"{station_bounds[0]/2 - 0.5:.6f}*cm {station_bounds[2]/2 - 0.5:.6f}*cm "
-    geometry += f"{honeycomb_thickness/2 - 0.5:.6f}*cm G4_Al\n"
-    
-    # Position: midpoint between SL2 (top) and SL1 (bottom) in Z
-    honeycomb_z = (sl2_z_max + sl1_z_min) / 2.0
-    
-    # Place honeycomb in station (no rotation needed)
-    geometry += f":PLACE {honeycomb_name} 1 {station_name} R0 "
-    geometry += f"0.0*cm 0.0*cm {honeycomb_z:.6f}*cm\n\n"
-    
-    return geometry
 
 
 # =============================================================================
@@ -339,9 +258,19 @@ def generate_yoke(stations_list, sector_stations):
         except:
             continue
         
+        # The solid comes from the station .tg, named Solid_Station_... there.
+        # The rotation is defined here under its own name: the station file
+        # defines the one it uses for its own placement, and both are the same
+        # Station -> CMS matrix.
         st_solid_name = f"Solid_Station_W{w}_Sec{s}_St{st_num}"
-        rot_name = f"RM_Station_{w}_{s}_{st_num}"
+        rot_name = f"RM_Yoke_Station_{w}_{s}_{st_num}"
         st_center = st.global_center
+        geometry += format_rotation_matrix(
+            extract_rotation(
+                st.transformer.get_transformation(from_frame="Station", to_frame="CMS")
+            ),
+            rot_name
+        )
         
         # Position relative to reference frame
         rel_z = st_center[2] - ref_z_center
@@ -375,7 +304,7 @@ def generate_station_geometry_ascii(
     concentrator_output,
     include_yoke=False,
     include_honeycomb=False,
-    refFrame="CMS"
+    ref_frame="CMS"
 ):
     """
     Generate Geant4 ASCII text geometry for multiple DT stations.
@@ -388,6 +317,7 @@ def generate_station_geometry_ascii(
         concentrator_output: Output concentrator geometry file
         include_yoke: If True, generate sector-wide iron yokes with holes
         include_honeycomb: If True, add aluminum honeycomb layer between SL2 and SL1
+        ref_frame: reference frame for the station placement, "CMS" or "Station"
     """
     # Create output directory if it doesn't exist
     Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -397,6 +327,7 @@ def generate_station_geometry_ascii(
     
     # Group stations by sector for yoke generation
     sector_stations = {} # (wheel, sector) -> [station_nums]
+    total_cells = 0
     
     for wheel, sector, station_num in stations_list:
         # Add to sector group
@@ -405,40 +336,18 @@ def generate_station_geometry_ascii(
             sector_stations[key] = []
         sector_stations[key].append(station_num)
         
-        station = Station(wheel=wheel, sector=sector, station=station_num)
-        
         # Create filename for this station
         station_filename = f"station_W{wheel}_Sec{sector}_St{station_num}.tg"
-        station_filepath = Path(output_dir) / station_filename
         station_files.append(station_filename)
         
-        # Generate geometry for this station
-        station_geometry = (f"// ===== Station: Wheel={wheel}, Sector={sector}, Station={station_num} =====\n"
-                           f"// {station.name}\n\n")
-        
-        # Create station volume and placement
-        station_vol, station_name, station_bounds = create_station_volume(
-            station, wheel, sector, station_num, refFrame
+        # Write the station: the mplDTs node tree through the .tg exporter
+        cells = export_station(
+            wheel, sector, station_num, Path(output_dir) / station_filename,
+            ref_frame, include_honeycomb
         )
-        station_geometry += station_vol
+        total_cells += cells
         
-        # NOTE: Yoke generation is now handled per-sector, not per-station
-        
-        # Add drift cells for all superlayers
-        station_geometry += create_superlayer_cells(
-            station, wheel, sector, station_num, station_name
-        )
-        
-        # Add honeycomb layer if requested
-        if include_honeycomb:
-            station_geometry += create_honeycomb(
-                station, wheel, sector, station_num, station_name, station_bounds
-            )
-        
-        # Write this station's geometry to its own file
-        station_filepath.write_text(station_geometry)
-        
-        print(f"  ✓ Generated: {station_filename}")
+        print(f"  ✓ Generated: {station_filename} ({cells} cells)")
     
     # Generate Fused Yoke if requested
     yoke_file = ""
@@ -450,11 +359,13 @@ def generate_station_geometry_ascii(
 
     # Create concentrator file with #include directives
     _create_concentrator_file(
-        station_files, yoke_file, concentrator_template, concentrator_output, stations_list
+        station_files, yoke_file, concentrator_template, concentrator_output,
+        len(stations_list), total_cells
     )
 
 
-def _create_concentrator_file(station_files, yoke_file, template_path, output_path, stations_list):
+def _create_concentrator_file(station_files, yoke_file, template_path, output_path,
+                              n_stations, n_cells):
     """
     Create the main concentrator geometry file that includes all station files.
     
@@ -463,7 +374,8 @@ def _create_concentrator_file(station_files, yoke_file, template_path, output_pa
         yoke_file: Filename of the yoke geometry file
         template_path: Path to concentrator template file
         output_path: Output path for concentrator file
-        stations_list: List of station tuples for statistics
+        n_stations: Number of stations included
+        n_cells: Total number of drift cells placed
     """
     include_lines = "\n".join([f"#include geometry/stations/{fname}" for fname in station_files])
     if yoke_file:
@@ -482,17 +394,8 @@ def _create_concentrator_file(station_files, yoke_file, template_path, output_pa
     
     # Print summary statistics
     print(f"\n✓ Concentrator file: {output_path}")
-    print(f"  Stations: {len(stations_list)}")
-    
-    # Count total cells
-    total_cells = 0
-    for wheel, sector, station_num in stations_list:
-        station = Station(wheel=wheel, sector=sector, station=station_num)
-        for sl in station.super_layers:
-            for layer in sl.layers:
-                total_cells += len(layer.cells)
-    
-    print(f"  Total cells: {total_cells}")
+    print(f"  Stations: {n_stations}")
+    print(f"  Total cells: {n_cells}")
 
 
 if __name__ == "__main__":
@@ -519,5 +422,5 @@ if __name__ == "__main__":
         concentrator_output='geometry_concentrator.tg',
         include_yoke=False,       # Include iron yoke
         include_honeycomb=False,   # Include aluminum honeycomb between SL2 and SL1
-        refFrame="Station" # reference frame to use, if not "CMS", many station is no recomended.
+        ref_frame="Station"  # reference frame to use, if not "CMS", many station is no recomended.
     )
