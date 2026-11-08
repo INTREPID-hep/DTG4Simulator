@@ -14,9 +14,7 @@ from pathlib import Path
 import numpy as np
 
 from mpldts.export import TgSink, export_volumes, iter_volume_placements
-from mpldts.geometry import Station
 from mpldts.geometry.model import build_station
-from mpldts.geometry.presets import cms
 from mpldts.geometry.sources.cms_xml import CMSXMLSource
 from mpldts.geometry.specs import Pose
 
@@ -52,6 +50,9 @@ def format_rotation_matrix(rot, name):
     Returns:
         Formatted ROTM line
     """
+    # a -0.0 would print as "-0.000000" and make the file differ from the build
+    # it was validated against; the numbers are the same
+    rot = np.where(np.asarray(rot, dtype=float) == 0.0, 0.0, rot)
     return (f":ROTM {name} "
             f"{rot[0]:.6f} {rot[1]:.6f} {rot[2]:.6f} "
             f"{rot[3]:.6f} {rot[4]:.6f} {rot[5]:.6f} "
@@ -89,35 +90,35 @@ def _volume_names(wheel, sector, station_num):
     return name_of
 
 
-def station_node(wheel, sector, station_num, ref_frame="CMS", include_honeycomb=False):
+def station_node(wheel, sector, station_num, ref_frame="CMS"):
     """
     mplDTs node tree of one chamber, ready for the exporter.
+
+    The source returns the whole chamber, honeycomb panel included (3.0 folds
+    the CMS preset into CMSXMLSource.station).
 
     Args:
         wheel, sector, station_num: Station identifiers
         ref_frame: "CMS" places the station in the detector, "Station" writes it
             at the world origin with no rotation (single chamber files)
-        include_honeycomb: add the aluminium panel between SL2 and SL1
 
     Returns:
         The station Node
     """
     spec = SOURCE.station(wheel, sector, station_num)
-    if include_honeycomb:
-        spec = cms.with_attachments(spec, SOURCE.record(wheel, sector, station_num))
     if ref_frame == "Station":
         spec = replace(spec, pose=Pose.identity())
     return build_station(spec)
 
 
-def export_station(wheel, sector, station_num, path, ref_frame="CMS", include_honeycomb=False):
+def export_station(wheel, sector, station_num, path, ref_frame="CMS"):
     """
     Write one station .tg through the mplDTs exporter.
 
     Returns:
         Number of drift cells placed in the file
     """
-    node = station_node(wheel, sector, station_num, ref_frame, include_honeycomb)
+    node = station_node(wheel, sector, station_num, ref_frame)
     export_volumes(node, TgSink(str(path), name_of=_volume_names(wheel, sector, station_num)))
     return sum(1 for p in iter_volume_placements(node) if p.node.kind == "cell")
 
@@ -149,23 +150,22 @@ def _calculate_sector_bounds(wheel, sector, stations_in_sector):
     
     for st_num in stations_in_sector:
         try:
-            st = Station(wheel=wheel, sector=sector, station=st_num)
-            
-            # Radial extent
-            center = st.global_center
-            r = np.sqrt(center[0]**2 + center[1]**2)
-            h = st.bounds[1]
-            r_min = min(r_min, r - h / 2)
-            r_max = max(r_max, r + h / 2)
-            
-            # Z extent
-            z, l = center[2], st.bounds[2]
-            z_min = min(z_min, z - l / 2)
-            z_max = max(z_max, z + l / 2)
-            
-            valid = True
-        except:
+            spec = SOURCE.station(wheel, sector, st_num)
+        except KeyError:
             continue
+
+        # Radial extent: the chamber sits at its CMS pose, thickness radial
+        center = spec.pose.translation
+        _, length, thickness = spec.shape.aabb()
+        r = np.sqrt(center[0]**2 + center[1]**2)
+        r_min = min(r_min, r - thickness / 2)
+        r_max = max(r_max, r + thickness / 2)
+
+        # Z extent: the length axis runs along the beam
+        z_min = min(z_min, center[2] - length / 2)
+        z_max = max(z_max, center[2] + length / 2)
+
+        valid = True
     
     if not valid:
         return None
@@ -254,8 +254,8 @@ def generate_yoke(stations_list, sector_stations):
     
     for w, s, st_num in stations_list:
         try:
-            st = Station(wheel=w, sector=s, station=st_num)
-        except:
+            spec = SOURCE.station(w, s, st_num)
+        except KeyError:
             continue
         
         # The solid comes from the station .tg, named Solid_Station_... there.
@@ -264,13 +264,8 @@ def generate_yoke(stations_list, sector_stations):
         # Station -> CMS matrix.
         st_solid_name = f"Solid_Station_W{w}_Sec{s}_St{st_num}"
         rot_name = f"RM_Yoke_Station_{w}_{s}_{st_num}"
-        st_center = st.global_center
-        geometry += format_rotation_matrix(
-            extract_rotation(
-                st.transformer.get_transformation(from_frame="Station", to_frame="CMS")
-            ),
-            rot_name
-        )
+        st_center = spec.pose.translation
+        geometry += format_rotation_matrix(extract_rotation(spec.pose.matrix()), rot_name)
         
         # Position relative to reference frame
         rel_z = st_center[2] - ref_z_center
@@ -303,7 +298,6 @@ def generate_station_geometry_ascii(
     concentrator_template,
     concentrator_output,
     include_yoke=False,
-    include_honeycomb=False,
     ref_frame="CMS"
 ):
     """
@@ -316,7 +310,6 @@ def generate_station_geometry_ascii(
         concentrator_template: Path to concentrator template file
         concentrator_output: Output concentrator geometry file
         include_yoke: If True, generate sector-wide iron yokes with holes
-        include_honeycomb: If True, add aluminum honeycomb layer between SL2 and SL1
         ref_frame: reference frame for the station placement, "CMS" or "Station"
     """
     # Create output directory if it doesn't exist
@@ -342,8 +335,7 @@ def generate_station_geometry_ascii(
         
         # Write the station: the mplDTs node tree through the .tg exporter
         cells = export_station(
-            wheel, sector, station_num, Path(output_dir) / station_filename,
-            ref_frame, include_honeycomb
+            wheel, sector, station_num, Path(output_dir) / station_filename, ref_frame
         )
         total_cells += cells
         
@@ -412,16 +404,15 @@ if __name__ == "__main__":
     print("Generating DT geometry files...")
     print(f"Stations to generate: {len(stations_to_generate)}")
 
-    # The concentrator template asks for Yoke*, Honeycomb* and DriftCell*
-    # volumes and it places the chambers in CMS, so all three switches have to
-    # agree with it: without the yoke or the honeycomb Geant4 aborts at setup,
-    # and in the "Station" frame every chamber sits on the world origin.
+    # The concentrator template asks for Yoke* and Honeycomb* volumes and it
+    # places the chambers in CMS, so the yoke switch has to agree with it
+    # (without the yoke Geant4 aborts at setup) and the honeycomb comes with
+    # the chamber. In the "Station" frame every chamber sits on the origin.
     generate_station_geometry_ascii(
         stations_list=stations_to_generate,
         output_dir='stations',
         concentrator_template='geometry_concentrator_template',
         concentrator_output='geometry_concentrator.tg',
         include_yoke=True,
-        include_honeycomb=True,
         ref_frame="CMS",
     )
