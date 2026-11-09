@@ -50,36 +50,47 @@ Los SDs se pueden activar/desactivar individualmente:
 
 ## Script de Generación
 
-El script `generate_geometry_data.py` genera automáticamente:
+La generación tiene dos mitades: ```geometry/build_geometry.py``` escribe los
+```.tg``` y el concentrador, y ```geometry/detectors/<nombre>.py``` describe UN
+detector. Un detector es un solo archivo y contesta tres preguntas:
 
-- **Estaciones DT**: Un archivo `.tg` por estación con celdas de drift y honeycomb
-- **Yoke unificado**: Archivo `yoke.tg` con yugo de hierro completo (operaciones booleanas)
-- **Archivo concentrador**: Incluye todos los componentes
+    chambers()             [(etiqueta, clave, StationSpec)]: un .tg por entrada
+    families()             familias de volúmenes que el concentrador pinta
+    yoke(chambers, path)   archivo extra opcional (el yugo de CMS)
+
+```build_geometry.py --detector cms``` genera las 36 cámaras de muestra, su
+honeycomb y el yugo; ```--detector mutel``` genera el prototipo MuTel (dos pares
+de supercapas y el muro de plomo). Para añadir un detector basta con escribir
+```detectors/mi_detector.py``` y añadirlo a ```detectors/__init__.py```: no hay
+que tocar el generador ni el concentrador.
+
+El concentrador se genera a partir de las familias del propio detector, así que
+un detector sin yugo ni honeycomb no necesita plantilla.
 
 ### Componentes Generados
 
 1. **Volúmenes de Estación** - contenedor de aire para cada MB
 2. **Celdas de Drift** - volumen lógico único por superlayer, múltiples copias
-3. **Honeycomb de Aluminio** - capa entre superlayers (opcional)
-4. **Yugo de Hierro** - estructura unificada con huecos para estaciones (opcional)
+3. **Honeycomb de Aluminio** - capa entre superlayers, derivada del XML de CMS
+4. **Yugo de Hierro** - estructura unificada con huecos para estaciones (solo CMS)
 
 ### Uso Básico
 
-```python
-stations_to_generate = [
-    (-1, 1, 1),  # Wheel, Sector, Station (MB1)
-    (-1, 1, 2),  # MB2
-    # ... más estaciones
-]
+```bash
+cd geometry/
 
-generate_station_geometry_ascii(
-    stations_list=stations_to_generate,
-    output_dir='stations',
-    concentrator_template='geometry_concentrator_template',
-    concentrator_output='geometry_concentrator.tg',
-    include_yoke=True,        # Genera yugo de hierro
-    include_honeycomb=True    # Añade honeycomb
-)
+# CMS: 36 cámaras de muestra + yugo + honeycomb
+python build_geometry.py
+
+# MuTel: dos pares de supercapas + muro de plomo de 5 cm
+python build_geometry.py --detector mutel --output mutel     --concentrator mutel_concentrator.tg
+```
+
+El MuTel se simula apuntando el macro a su concentrador, antes de
+```/run/initialize```:
+
+```bash
+/DTSim/detector/setGeometryFile geometry/mutel_concentrator.tg
 ```
 
 ## Archivos Generados
@@ -111,7 +122,12 @@ world (G4_Galactic)
 
 ```bash
 cd geometry/
-python generate_geometry_data.py
+python generate_geometry_data.py                 # = build_geometry.py --detector cms
 ```
 
-La geometría se regenera sin necesidad de recompilar el proyecto. Los archivos `.tg` se copian automáticamente al directorio de build.
+La geometría se regenera sin necesidad de recompilar el proyecto. Los archivos
+```.tg``` se copian al directorio de build:
+
+```bash
+cp -r stations yoke.tg geometry_concentrator.tg ../build/geometry/
+```

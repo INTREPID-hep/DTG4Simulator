@@ -85,10 +85,13 @@ Ver archivos en `macros/settings/` para ejemplos completos. Consultar **[docs/co
 
 ```bash
 cd geometry/
-# Editar estaciones en generate_geometry_data.py
-python generate_geometry_data.py
-cd ../build && cmake ..  # Copiar nuevos .tg
+python build_geometry.py                     # CMS (36 cámaras + yugo)
+python build_geometry.py --detector mutel    # prototipo MuTel
+cd ../build && cmake ..                      # Copiar nuevos .tg
 ```
+
+Cada detector es un archivo en ```geometry/detectors/```: ver
+```detectors/prototype.py``` (el MuTel) como ejemplo mínimo.
 
 ## Producción Masiva (HTCondor)
 
