@@ -2,4 +2,4 @@
 # The revision below is the one validated by geometry/smoke_tg.py.
 # To develop against the checkout instead:
 #   PYTHONPATH=/home/destrada/mplDTs python geometry/generate_geometry_data.py
-mplDTs @ git+https://github.com/INTREPID-hep/mplDTs.git@v3.0.0
+mplDTs @ git+https://github.com/INTREPID-hep/mplDTs.git@v3.0.1
